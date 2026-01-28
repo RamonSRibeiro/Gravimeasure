@@ -1,4 +1,4 @@
-# BDG Project
+# Gravimanager
 
 ## Descrição
 Este projeto é uma aplicação web desenvolvida em Django para gestão de medições gravimétricas com geração de relatórios em PDF. O sistema permite que usuários registrem, visualizem e gere documentação de medições de gravidade em estações específicas.
