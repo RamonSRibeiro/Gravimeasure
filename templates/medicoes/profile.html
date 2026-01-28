@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block title %}Perfil - Banco de Dados Gravimétrico{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 30px auto; padding: 20px;">
+    <div style="background-color: #f8f9fa; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h1 style="color: var(--primary-blue); margin-bottom: 10px;">Meu Perfil</h1>
+        <p style="color: #666; margin-bottom: 30px;">Gerenciar suas informações pessoais e preferências de conta</p>
+        
+        <!-- Informações de Tipo de Usuário -->
+        <div style="background-color: white; padding: 20px; border-radius: 4px; margin-bottom: 30px; border-left: 4px solid var(--primary-blue);">
+            <h3 style="color: var(--primary-blue); margin-top: 0;">Tipo de Acesso</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <p style="margin: 0; color: #666; font-size: 0.9rem;">Tipo de Usuário</p>
+                    <p style="margin: 5px 0 0 0; font-size: 1.2rem; font-weight: bold; color: var(--primary-blue);">
+                        {{ user_type_display }}
+                    </p>
+                </div>
+                <div>
+                    <p style="margin: 0; color: #666; font-size: 0.9rem;">Data de Registro</p>
+                    <p style="margin: 5px 0 0 0; font-size: 1rem;">
+                        {{ user.created_at|date:"d/m/Y H:i" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Descrição de Permissões -->
+        <div style="background-color: #e7f3ff; padding: 15px; border-radius: 4px; margin-bottom: 30px; border-left: 4px solid #0066cc;">
+            <h4 style="margin-top: 0; color: #0066cc;">Permissões do Seu Tipo de Usuário:</h4>
+            {% if user.is_admin %}
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>✓ Visualizar todas as medições</li>
+                    <li>✓ Adicionar novas medições</li>
+                    <li>✓ Editar medições</li>
+                    <li>✓ Deletar medições</li>
+                    <li>✓ Gerar relatórios em PDF</li>
+                    <li>✓ Acesso administrativo</li>
+                </ul>
+            {% elif user.is_operator %}
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>✓ Visualizar todas as medições</li>
+                    <li>✓ Adicionar novas medições</li>
+                    <li>✓ Editar medições</li>
+                    <li>✓ Gerar relatórios em PDF</li>
+                </ul>
+            {% else %}
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>✓ Visualizar todas as medições</li>
+                    <li>✓ Gerar relatórios em PDF</li>
+                </ul>
+            {% endif %}
+        </div>
+        
+        <!-- Formulário de Edição -->
+        <form method="post" novalidate>
+            {% csrf_token %}
+            
+            <h3 style="color: var(--primary-blue); margin-bottom: 20px;">Editar Informações Pessoais</h3>
+            
+            {% if form.non_field_errors %}
+                <div style="padding: 12px; margin-bottom: 20px; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; color: #721c24;">
+                    {% for error in form.non_field_errors %}
+                        <p><strong>Erro:</strong> {{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div>
+                    <label for="{{ form.first_name.id_for_label }}" style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">
+                        Nome
+                    </label>
+                    {{ form.first_name }}
+                </div>
+                <div>
+                    <label for="{{ form.last_name.id_for_label }}" style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">
+                        Sobrenome
+                    </label>
+                    {{ form.last_name }}
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label for="{{ form.email.id_for_label }}" style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">
+                    Email
+                </label>
+                {{ form.email }}
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div>
+                    <label for="{{ form.phone.id_for_label }}" style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">
+                        Telefone
+                    </label>
+                    {{ form.phone }}
+                </div>
+                <div>
+                    <label for="{{ form.organization.id_for_label }}" style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">
+                        Organização/Instituição
+                    </label>
+                    {{ form.organization }}
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div>
+                    <label for="{{ form.role_category.id_for_label }}" style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">Categoria</label>
+                    {{ form.role_category }}
+                </div>
+                <div>
+                    <label style="display:block; margin-bottom:5px; font-weight: bold; color:#333;">Áreas de Atuação</label>
+                    {{ form.areas }}
+                </div>
+            </div>
+            
+            <button type="submit" style="padding: 12px 30px; background-color: var(--primary-blue); color: white; border: none; border-radius: 4px; font-size: 1rem; font-weight: bold; cursor: pointer;">
+                Salvar Alterações
+            </button>
+        </form>
+    </div>
+</div>
+
+<style>
+    .form-control {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+        box-sizing: border-box;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary-blue);
+        box-shadow: 0 0 5px rgba(0, 51, 102, 0.2);
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,148 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Política de Privacidade - GraviMeasure</title>
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
+    <style>
+        .privacy-container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            line-height: 1.6;
+        }
+        
+        .privacy-container h1 {
+            color: var(--primary-blue);
+            border-bottom: 2px solid var(--primary-blue);
+            padding-bottom: 10px;
+        }
+        
+        .privacy-container h2 {
+            color: var(--accent-blue);
+            margin-top: 30px;
+        }
+        
+        .privacy-container p {
+            color: #333;
+            margin: 15px 0;
+        }
+        
+        .privacy-container ul {
+            margin-left: 20px;
+            color: #333;
+        }
+        
+        .privacy-container li {
+            margin: 10px 0;
+        }
+        
+        .last-update {
+            font-style: italic;
+            color: #666;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-gray);
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div style="font-weight: bold; color: var(--primary-blue);">
+        GraviMeasure<br>
+        <a href="/" style="color: var(--primary-blue); text-decoration: line; font-size:15px">Home</a>
+    </div>
+</header>
+
+<main class="privacy-container">
+    <h1>Política de Privacidade</h1>
+    
+    <h2>1. Introdução</h2>
+    <p>
+        A Rede Gravimétrica Fundamental opera o sistema GraviMeasure. 
+        Esta página informa você sobre nossas políticas e práticas de privacidade relativas à 
+        coleta, uso e divulgação de dados pessoais.
+    </p>
+    
+    <h2>2. Coleta de Dados</h2>
+    <p>Coletamos dados pessoais que você voluntariamente nos fornece, incluindo:</p>
+    <ul>
+        <li>Nome e e-mail durante o registro</li>
+        <li>Informações de perfil de usuário</li>
+        <li>Dados de medições gravimétricas que você insere no sistema</li>
+        <li>Histórico de acesso ao sistema</li>
+    </ul>
+    
+    <h2>3. Uso de Dados</h2>
+    <p>Utilizamos os dados coletados para:</p>
+    <ul>
+        <li>Gerenciar sua conta e fornecer acesso ao sistema</li>
+        <li>Armazenar e organizar dados de medições gravimétricas</li>
+        <li>Melhorar e otimizar nossos serviços</li>
+        <li>Comunicar-nos com você sobre atualizações do sistema</li>
+        <li>Cumprir obrigações legais e regulamentares</li>
+    </ul>
+    
+    <h2>4. Segurança de Dados</h2>
+    <p>
+        Implementamos medidas técnicas e organizacionais apropriadas para proteger seus dados 
+        pessoais contra acesso não autorizado, alteração, divulgação ou destruição.
+    </p>
+    
+    <h2>5. Retenção de Dados</h2>
+    <p>
+        Retenemos seus dados pessoais enquanto sua conta estiver ativa. Se você desativar ou 
+        solicitar a exclusão de sua conta, retiraremos seus dados pessoais de acordo com nossas 
+        políticas de retenção legais.
+    </p>
+    
+    <h2>6. Compartilhamento de Dados</h2>
+    <p>
+        Não compartilhamos seus dados pessoais com terceiros sem seu consentimento explícito, 
+        exceto quando obrigado por lei ou quando necessário para fornecer nossos serviços.
+    </p>
+    
+    <h2>7. Seus Direitos</h2>
+    <p>Você tem o direito de:</p>
+    <ul>
+        <li>Acessar os dados pessoais que mantemos sobre você</li>
+        <li>Corrigir dados pessoais imprecisos</li>
+        <li>Solicitar a exclusão de seus dados pessoais</li>
+        <li>Revogar seu consentimento para o processamento de dados</li>
+    </ul>
+    
+    <h2>8. Alterações a Esta Política</h2>
+    <p>
+        Podemos atualizar esta Política de Privacidade periodicamente. Notificaremos você sobre 
+        quaisquer mudanças materiais por meio de um aviso destacado neste site ou por email.
+    </p>
+    
+    <h2>9. Contato</h2>
+    <p>
+        Se você tiver dúvidas sobre esta Política de Privacidade ou nossas práticas de privacidade, 
+        entre em contato conosco através do formulário de contato no sistema.
+    </p>
+    
+    <div class="last-update">
+        <p>Última atualização: {% now "d \d\e F \d\e Y" %}</p>
+    </div>
+</main>
+
+<footer>
+    <div style="font-weight: bold; color: var(--primary-blue); border-left: 4px solid var(--primary-blue); padding-left: 15px;">
+        GraviMeasure — REDE GRAVIMÉTRICA FUNDAMENTAL<br>
+        <span style="font-weight: normal; font-size: 0.8rem; color: #666;">
+            © {{ year }} Rede Gravimétrica Fundamental | 
+            <a href="/privacy/" style="color: var(--primary-blue); text-decoration: none;">Privacidade</a>
+        </span>
+    </div>
+</footer>
+
+</body>
+</html>

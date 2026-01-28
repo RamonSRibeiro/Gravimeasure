@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'medicoes/pdf.css' %}">
+</head>
+<body>
+    <div class="header">
+        {% if logo_data %}
+            <img src="{{ logo_data }}" alt="logo" style="height:48px;" />
+        {% else %}
+            <img src="{% static 'medicoes/logo.svg' %}" alt="logo" style="height:48px;" />
+        {% endif %}
+        <div class="document-title">
+            <h1>GRAVIMANAGER</h1>
+            <div class="company-small">REDE GRAVIMÉTRICA FUNDAMENTAL</div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Informações da Estação</div>
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Código da Estação:</span>
+                <span class="info-value">{{ medicao.codigo_estacao }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Nome da Estação:</span>
+                <span class="info-value">{{ medicao.nome_estacao }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Localização Geográfica</div>
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Latitude:</span>
+                <span class="info-value">{{ medicao.latitude }}°</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Longitude:</span>
+                <span class="info-value">{{ medicao.longitude }}°</span>
+            </div>
+            {% if medicao.altitude %}
+            <div class="info-item">
+                <span class="info-label">Altitude:</span>
+                <span class="info-value">{{ medicao.altitude }} m</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Dados da Medição</div>
+        <table>
+            <tr>
+                <th>Parâmetro</th>
+                <th>Valor</th>
+            </tr>
+            <tr>
+                <td>Valor da Gravidade</td>
+                <td>{{ medicao.valor_gravidade }} mGal</td>
+            </tr>
+                <tr>
+                    <td>Anomalia Free-Air</td>
+                    <td>{% with fa=medicao.calcular_anomalia_ar_livre %}{% if fa %}{{ fa }} mGal{% else %}N/A{% endif %}{% endwith %}</td>
+                </tr>
+                <tr>
+                    <td>Gradiente Vertical (aprox.)</td>
+                    <td>{{ medicao.calcular_gradiente_vertical }} mGal/m</td>
+                </tr>
+            {% if medicao.incerteza %}
+            <tr>
+                <td>Incerteza</td>
+                <td>{{ medicao.incerteza }} mGal</td>
+            </tr>
+            {% endif %}
+            {% if medicao.anomalia_bouguer %}
+            <tr>
+                <td><strong>Anomalia de Bouguer</strong></td>
+                <td><strong>{{ medicao.anomalia_bouguer }} mGal</strong></td>
+            </tr>
+            {% if medicao.densidade_referencia %}
+            <tr>
+                <td>Densidade de Referência</td>
+                <td>{{ medicao.densidade_referencia }} g/cm³</td>
+            </tr>
+            {% endif %}
+            {% endif %}
+            <tr>
+                <td>Data da Medição</td>
+                <td>{{ medicao.data_medicao|date:"d/m/Y" }}</td>
+            </tr>
+        </table>
+    </div>
+
+    {% if medicao.operador or medicao.instrumento %}
+    <div class="section">
+        <div class="section-title">Informações Adicionais</div>
+        <div class="info-grid">
+            {% if medicao.operador %}
+            <div class="info-item">
+                <span class="info-label">Operador:</span>
+                <span class="info-value">{{ medicao.operador }}</span>
+            </div>
+            {% endif %}
+            {% if medicao.instrumento %}
+            <div class="info-item">
+                <span class="info-label">Instrumento:</span>
+                <span class="info-value">{{ medicao.instrumento }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if medicao.observacoes %}
+    <div class="section">
+        <div class="section-title">Observações</div>
+        <p style="text-align: justify;">{{ medicao.observacoes }}</p>
+    </div>
+    {% endif %}
+
+    {% if medicao.foto_estacao or medicao.croqui %}
+    <div class="section">
+        <div class="section-title">Imagens</div>
+        <div class="images-row">
+            {% if foto_data %}
+            <div class="image-block">
+                <div class="info-label">Foto da Estação</div>
+                <img src="{{ foto_data }}" class="pdf-image" />
+            </div>
+            {% elif foto_path %}
+            <div class="image-block">
+                <div class="info-label">Foto da Estação</div>
+                <img src="{{ foto_path }}" class="pdf-image" />
+            </div>
+            {% elif medicao.foto_estacao %}
+            <div class="image-block">
+                <div class="info-label">Foto da Estação</div>
+                <img src="{{ medicao.foto_estacao.url }}" class="pdf-image" />
+            </div>
+            {% endif %}
+            {% if croqui_data %}
+            <div class="image-block">
+                <div class="info-label">Croqui / Desenho</div>
+                <img src="{{ croqui_data }}" class="pdf-image" />
+            </div>
+            {% elif croqui_path %}
+            <div class="image-block">
+                <div class="info-label">Croqui / Desenho</div>
+                <img src="{{ croqui_path }}" class="pdf-image" />
+            </div>
+            {% elif medicao.croqui %}
+            <div class="image-block">
+                <div class="info-label">Croqui / Desenho</div>
+                <img src="{{ medicao.croqui.url }}" class="pdf-image" />
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        <p>Documento gerado automaticamente em {{ medicao.data_atualizacao|date:"d/m/Y H:i" }}</p>
+        <p>Gravimanager - Rede Gravimétrica Fundamental</p>
+    </div>
+</body>
+</html>

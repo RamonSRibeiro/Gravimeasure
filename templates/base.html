@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Gravimanager - Estações Gravimétricas{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<header>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-weight: bold; color: var(--primary-blue); border-left: 4px solid var(--primary-blue); padding-left: 15px;">
+            GraviMeasure<br>
+            <span style="font-weight: normal; font-size: 0.8rem;">Gravity Measurement System</span>
+        </div>
+        <div>
+            {% if user.is_authenticated %}
+                <span style="margin-right: 15px; color: #666;">
+                    <strong>{{ user.first_name }}</strong> ({{ user.get_user_type_display }})
+                </span>
+                <a href="{% url 'medicoes:profile' %}" style="margin-right: 10px; color: var(--primary-blue); text-decoration: none; font-size: 0.9rem;">Perfil</a>
+                <a href="{% url 'medicoes:logout' %}" style="color: var(--primary-blue); text-decoration: none; font-size: 0.9rem;">Sair</a>
+            {% else %}
+                <a href="{% url 'medicoes:login' %}" style="margin-right: 10px; color: var(--primary-blue); text-decoration: none; font-size: 0.9rem;">Login</a>
+                <a href="{% url 'medicoes:signup' %}" style="color: var(--primary-blue); text-decoration: none; font-size: 0.9rem;">Registrar</a>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if user.is_authenticated %}
+    <nav style="margin-top: 15px;">
+        <a href="{% url 'medicoes:home' %}" style="margin-right: 15px; color: var(--primary-blue); text-decoration: none;">Home</a>
+        <a href="{% url 'medicoes:medicao_lista' %}" style="margin-right: 15px; color: var(--primary-blue); text-decoration: none;">Medições</a>
+        {% if user.is_operator or user.is_admin %}
+            <a href="{% url 'medicoes:medicao_adicionar' %}" style="margin-right: 15px; color: var(--primary-blue); text-decoration: none;">Adicionar Medição</a>
+        {% endif %}
+        <a href="{% url 'medicoes:medicao_pdf_consolidado' %}" style="color: var(--primary-blue); text-decoration: none;">PDF Consolidado</a>
+    </nav>
+    {% endif %}
+</header>
+
+<main>
+    {% if messages %}
+        <div style="max-width: 1200px; margin: 20px auto 0 auto; padding: 0 20px;">
+            {% for message in messages %}
+                <div style="padding: 12px; margin-bottom: 10px; background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; color: #155724;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    
+    {% block content %}{% endblock %}
+</main>
+
+<footer>
+    <div style="font-weight: bold; color: var(--primary-blue); border-left: 4px solid var(--primary-blue); padding-left: 15px;">
+        GraviMeasure — REDE GRAVIMÉTRICA FUNDAMENTAL<br>
+        <span style="font-weight: normal; font-size: 0.8rem; color: #666;">
+            © {{ year }} Rede Gravimétrica Fundamental | 
+            <a href="/privacy/" style="color: var(--primary-blue); text-decoration: none;">Privacidade</a>
+        </span>
+    </div>
+</footer>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

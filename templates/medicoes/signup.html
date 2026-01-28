@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}Registrar - Banco de Dados Gravimétrico{% endblock %}
+
+{% block content %}
+<div style="max-width: 500px; margin: 50px auto; padding: 20px;">
+    <div style="background-color: #f8f9fa; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h1 style="color: var(--primary-blue); text-align: center; margin-bottom: 30px;">Criar Conta</h1>
+        
+        <form method="post" novalidate>
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+                <div style="padding: 12px; margin-bottom: 20px; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; color: #721c24;">
+                    {% for error in form.non_field_errors %}
+                        <p><strong>Erro:</strong> {{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            {% for field in form %}
+                <div style="margin-bottom: 20px;">
+                    <label for="{{ field.id_for_label }}" style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">
+                        {{ field.label }}
+                        {% if field.field.required %}<span style="color: red;">*</span>{% endif %}
+                    </label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <small style="display: block; margin-top: 5px; color: #666;">
+                            {{ field.help_text|safe }}
+                        </small>
+                    {% endif %}
+                    {% if field.errors %}
+                        <small style="display: block; margin-top: 5px; color: #dc3545;">
+                            {% for error in field.errors %}<strong>✗ {{ error }}</strong><br>{% endfor %}
+                        </small>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            
+            <button type="submit" style="width: 100%; padding: 12px; background-color: var(--primary-blue); color: white; border: none; border-radius: 4px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 20px;">
+                Registrar
+            </button>
+        </form>
+        
+        <p style="text-align: center; margin-top: 20px; color: #666;">
+            Já tem uma conta? <a href="{% url 'medicoes:login' %}" style="color: var(--primary-blue); text-decoration: none; font-weight: bold;">Faça login aqui</a>
+        </p>
+    </div>
+</div>
+
+<style>
+    .form-control {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+        box-sizing: border-box;
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary-blue);
+        box-shadow: 0 0 5px rgba(0, 51, 102, 0.2);
+    }
+</style>
+{% endblock %}

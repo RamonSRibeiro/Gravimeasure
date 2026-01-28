@@ -1,0 +1,443 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ medicao.nome_estacao }} - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<style>
+    .detail-container {
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: 20px;
+        max-width: 1400px;
+        margin: 30px auto;
+        padding: 0 20px;
+    }
+    
+    .detail-content {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .detail-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .small-map {
+        width: 100%;
+        height: 300px;
+        border-radius: 4px;
+        border: 1px solid var(--border-gray);
+        overflow: hidden;
+    }
+    
+    .info-box {
+        background: #f0f5ff;
+        border-left: 4px solid var(--primary-blue);
+        padding: 15px;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+    
+    .info-box label {
+        font-weight: 700;
+        color: var(--primary-blue);
+        display: block;
+        margin-bottom: 3px;
+    }
+    
+    .image-gallery {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .image-item {
+        background: white;
+        border: 1px solid var(--border-gray);
+        border-radius: 4px;
+        padding: 10px;
+        text-align: center;
+    }
+    
+    .image-item img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 3px;
+        display: block;
+        margin: 10px 0;
+    }
+    
+    .image-item label {
+        font-weight: 700;
+        color: var(--primary-blue);
+        font-size: 0.85rem;
+        display: block;
+        margin-bottom: 10px;
+    }
+    
+    @media (max-width: 1024px) {
+        .detail-container {
+            grid-template-columns: 1fr;
+        }
+        
+        .detail-sidebar {
+            grid-column: 1;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .detail-container {
+            margin: 20px auto;
+            padding: 0 10px;
+        }
+        
+        .small-map {
+            height: 250px;
+        }
+        
+        .image-gallery {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-container">
+    <div class="detail-content">
+        <!-- Informações Principais -->
+        <section class="detail-section">
+            <h2 style="color: var(--primary-blue); margin-top: 0; border-bottom: 2px solid var(--border-gray); padding-bottom: 10px;">
+                {{ medicao.codigo_estacao }} - {{ medicao.nome_estacao }}
+            </h2>
+            
+            <div class="detail-row">
+                <div class="detail-item">
+                    <label>Código da Estação</label>
+                    <p>{{ medicao.codigo_estacao }}</p>
+                </div>
+                <div class="detail-item">
+                    <label>Nome da Estação</label>
+                    <p>{{ medicao.nome_estacao }}</p>
+                </div>
+            </div>
+            
+            <div class="detail-row">
+                <div class="detail-item">
+                    <label>Data da Medição</label>
+                    <p>{{ medicao.data_medicao|date:"d/m/Y" }}</p>
+                </div>
+                <div class="detail-item">
+                    <label>Operador</label>
+                    <p>{{ medicao.operador|default:"N/A" }}</p>
+                </div>
+            </div>
+            
+            <div class="detail-row">
+                <div class="detail-item">
+                    <label>Instrumento</label>
+                    <p>{{ medicao.instrumento|default:"N/A" }}</p>
+                </div>
+                <div class="detail-item">
+                    <label>Status</label>
+                    <p>
+                        {% if medicao.ativo %}
+                            <span style="background: #c8e6c9; color: #2e7d32; padding: 3px 8px; border-radius: 3px; font-weight: 700;">Ativo</span>
+                        {% else %}
+                            <span style="background: #ffcdd2; color: #c62828; padding: 3px 8px; border-radius: 3px; font-weight: 700;">Inativo</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            
+            {% if medicao.observacoes %}
+            <div class="detail-item" style="grid-column: 1 / -1;">
+                <label>Observações</label>
+                <p>{{ medicao.observacoes }}</p>
+            </div>
+            {% endif %}
+        </section>
+        
+        <!-- Dados Geodésicos e Localização -->
+        <section class="detail-section">
+            <h3>📍 Localização Geodésica</h3>
+            
+            <div class="detail-row">
+                <div class="detail-item">
+                    <label>Latitude</label>
+                    <p>{{ medicao.latitude }}°</p>
+                </div>
+                <div class="detail-item">
+                    <label>Longitude</label>
+                    <p>{{ medicao.longitude }}°</p>
+                </div>
+            </div>
+            
+            <div class="detail-row">
+                <div class="detail-item">
+                    <label>Altitude</label>
+                    <p>{% if medicao.altitude %}{{ medicao.altitude }} m{% else %}N/A{% endif %}</p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Dados de Gravidade -->
+        <section class="detail-section">
+            <h3>⚖️ Dados Gravimétricos</h3>
+            
+            <div class="detail-row">
+                <div class="detail-item">
+                    <label>Valor da Gravidade</label>
+                    <p><strong>{{ medicao.valor_gravidade }} mGal</strong></p>
+                </div>
+                <div class="detail-item">
+                    <label>Incerteza</label>
+                    <p>{% if medicao.incerteza %}{{ medicao.incerteza }} mGal{% else %}N/A{% endif %}</p>
+                </div>
+            </div>
+            
+            <div class="detail-row">
+                <div class="detail-item">
+                    <label>Anomalia de Bouguer</label>
+                    <p>
+                        {% if medicao.anomalia_bouguer %}
+                            <strong style="color: var(--primary-blue); font-size: 1.1rem;">{{ medicao.anomalia_bouguer }} mGal</strong>
+                        {% else %}
+                            <span style="color: #999;">Não calculada</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="detail-item">
+                    <label>Densidade de Referência</label>
+                    <p>{{ medicao.densidade_referencia }} g/cm³</p>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Imagens -->
+        {% if medicao.foto_estacao or medicao.croqui %}
+        <section class="detail-section">
+            <h3>🖼️ Documentação Fotográfica e Técnica</h3>
+            <div class="image-gallery">
+                {% if medicao.foto_estacao %}
+                <div class="image-item">
+                    <label>Foto da Estação</label>
+                    <img src="{{ medicao.foto_estacao.url }}" alt="Foto da estação {{ medicao.nome_estacao }}">
+                </div>
+                {% endif %}
+                
+                {% if medicao.croqui %}
+                <div class="image-item">
+                    <label>Croqui/Desenho Técnico</label>
+                    <img src="{{ medicao.croqui.url }}" alt="Croqui da estação {{ medicao.nome_estacao }}">
+                </div>
+                {% endif %}
+            </div>
+        </section>
+        {% endif %}
+        
+        <!-- Metadados -->
+        <section class="detail-section" style="background: var(--light-gray);">
+            <h3 style="font-size: 0.95rem;">Metadados do Registro</h3>
+            
+            <div class="detail-row">
+                <div class="detail-item">
+                    <label>Cadastrado em</label>
+                    <p style="font-size: 0.85rem;">{{ medicao.data_cadastro|date:"d/m/Y H:i" }}</p>
+                </div>
+                <div class="detail-item">
+                    <label>Última Atualização</label>
+                    <p style="font-size: 0.85rem;">{{ medicao.data_atualizacao|date:"d/m/Y H:i" }}</p>
+                </div>
+            </div>
+        </section>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="detail-sidebar">
+        <!-- Mapa Pequeno -->
+        <div class="small-map responsive-map">
+            <div id="mapa-detalhe"></div>
+        </div>
+        
+        <!-- Informações de Status -->
+        <div class="info-box">
+            <label>📌 Coordenadas Rápidas</label>
+            <p style="margin: 8px 0 0 0; font-family: monospace; font-size: 0.85rem;">
+                {{ medicao.latitude|floatformat:6 }}<br>
+                {{ medicao.longitude|floatformat:6 }}
+            </p>
+        </div>
+        
+        <!-- Botões de Ação -->
+        <div class="btn-group" style="flex-direction: column; gap: 10px;">
+            <!-- PDF -->
+            <a href="{% url 'medicoes:medicao_pdf' medicao.pk %}" class="btn btn-primary" style="text-align: center;">
+                📄 Download PDF
+            </a>
+            
+            <!-- Editar (Operator/Admin) -->
+            {% if can_edit %}
+            <a href="{% url 'medicoes:medicao_editar' medicao.pk %}" class="btn btn-secondary" style="text-align: center;">
+                ✏️ Editar
+            </a>
+            {% endif %}
+            
+            <!-- Excluir (Admin) -->
+            {% if can_delete %}
+            <a href="{% url 'medicoes:medicao_excluir' medicao.pk %}" class="btn btn-danger" style="text-align: center;">
+                🗑️ Excluir
+            </a>
+            {% endif %}
+            
+            <!-- Voltar -->
+            <a href="{% url 'medicoes:medicao_lista' %}" class="btn" style="text-align: center; background-color: #666; color: white;">
+                ← Voltar para Lista
+            </a>
+        </div>
+        
+        <!-- Info de Usuário -->
+        <div class="info-box" style="background: #fff3e0; border-left-color: #ff9800;">
+            <label>👤 Responsável</label>
+            <p style="margin: 8px 0 0 0; font-size: 0.85rem;">
+                {% if medicao.usuario %}
+                    {{ medicao.usuario.first_name|default:medicao.usuario.username }}<br>
+                    <span style="color: #666; font-size: 0.8rem;">{{ medicao.usuario.get_user_type_display }}</span>
+                {% else %}
+                    <span style="color: #999;">Não atribuído</span>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Spinner de Loading -->
+<div class="spinner-overlay" id="spinnerOverlay"></div>
+<div class="spinner" id="spinner">
+    <div class="spinner-animation"></div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar o mapa de detalhe
+    // Validar coordenadas antes de inicializar o mapa
+    const latStr = "{{ medicao.latitude|default_if_none:'' }}".replace(',', '.');
+    const lngStr = "{{ medicao.longitude|default_if_none:'' }}".replace(',', '.');
+    const latVal = parseFloat(latStr);
+    const lngVal = parseFloat(lngStr);
+
+    if (!Number.isFinite(latVal) || !Number.isFinite(lngVal)) {
+        const mapaContainer = document.getElementById('mapa-detalhe');
+        if (mapaContainer) {
+            mapaContainer.innerHTML = '<div style="padding:20px; color:#c62828; background:#fff3f3; border:1px solid #f5c6cb;">Coordenadas inválidas ou ausentes. Não foi possível carregar o mapa.</div>';
+        }
+    } else {
+        const mapaContainer = document.getElementById('mapa-detalhe');
+        if (!mapaContainer) {
+            console.error('Contêiner do mapa não encontrado: #mapa-detalhe');
+        } else {
+            console.log('Iniciando mapa de detalhe com coords:', latVal, lngVal, 'container:', mapaContainer);
+        }
+
+        try {
+            if (!mapaContainer) throw new Error('Contêiner do mapa ausente');
+
+            console.log('Leaflet L:', typeof L !== 'undefined' ? L : 'undefined');
+            console.log('L.version:', (typeof L !== 'undefined' && L.version) ? L.version : 'n/a');
+            if (typeof L === 'undefined' || typeof L.map !== 'function') {
+                throw new Error('Leaflet não carregado corretamente (L.map ausente)');
+            }
+
+            const center = L.latLng(latVal, lngVal);
+            console.log('center object:', center);
+            if (!center || !Number.isFinite(center.lat) || !Number.isFinite(center.lng)) {
+                throw new Error('Centro inválido criado por L.latLng');
+            }
+
+            // Criar mapa sem setView inicialmente
+            const mapaDetalhe = L.map('mapa-detalhe');
+            console.log('Mapa criado:', mapaDetalhe);
+
+            // Tentar adicionar tileLayer separadamente
+            try {
+                const tile = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors',
+                    maxZoom: 19
+                });
+                tile.addTo(mapaDetalhe);
+                console.log('TileLayer adicionado com sucesso');
+            } catch (tileErr) {
+                console.error('Erro ao adicionar TileLayer:', tileErr);
+                throw tileErr;
+            }
+
+            // Tentar adicionar marcador separadamente
+            try {
+                const marker = L.marker([latVal, lngVal], {
+                    icon: L.icon({
+                        iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon.png',
+                        shadowUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-shadow.png',
+                        iconSize: [25, 41],
+                        iconAnchor: [12, 41],
+                        popupAnchor: [1, -34],
+                        shadowSize: [41, 41]
+                    })
+                }).addTo(mapaDetalhe);
+
+                marker.bindPopup(`
+                    <div style="font-weight: bold; color: var(--primary-blue); margin-bottom: 8px;">
+                        {{ medicao.nome_estacao }}
+                    </div>
+                    <div style="font-size: 0.85rem;">
+                        <strong>Código:</strong> {{ medicao.codigo_estacao }}<br>
+                        <strong>Altitude:</strong> {% if medicao.altitude %}{{ medicao.altitude }}m{% else %}N/A{% endif %}<br>
+                        <strong>Gravidade:</strong> {{ medicao.valor_gravidade }} mGal
+                    </div>
+                `);
+                marker.openPopup();
+                console.log('Marcador adicionado com sucesso');
+            } catch (markerErr) {
+                console.error('Erro ao adicionar marcador:', markerErr);
+                throw markerErr;
+            }
+
+            // Finalmente posicionar a vista
+            mapaDetalhe.setView([latVal, lngVal], 12);
+            console.log('Mapa posicionado em:', latVal, lngVal);
+
+        } catch (err) {
+            console.error('Erro ao inicializar o mapa de detalhe:', err);
+            const mapaContainerErr = document.getElementById('mapa-detalhe');
+            if (mapaContainerErr) {
+                mapaContainerErr.innerHTML = '<div style="padding:20px; color:#c62828; background:#fff3f3; border:1px solid #f5c6cb;">Erro ao carregar mapa: ' + (err.message || err) + '<br>Lat: ' + latVal + ' Lng: ' + lngVal + '<pre style="white-space:pre-wrap;">' + (err.stack || '') + '</pre></div>';
+            }
+        }
+    }
+    
+    // Link PDF
+    document.querySelector('.btn-primary').addEventListener('click', function() {
+        mostrarSpinner();
+        setTimeout(ocultarSpinner, 1500);
+    });
+    
+    // Funções do spinner
+    window.mostrarSpinner = function() {
+        document.getElementById('spinner').classList.add('show');
+        document.getElementById('spinnerOverlay').classList.add('show');
+    };
+    
+    window.ocultarSpinner = function() {
+        document.getElementById('spinner').classList.remove('show');
+        document.getElementById('spinnerOverlay').classList.remove('show');
+    };
+});
+</script>
+{% endblock %}

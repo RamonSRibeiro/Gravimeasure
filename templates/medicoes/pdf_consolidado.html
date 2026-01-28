@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'medicoes/pdf.css' %}">
+</head>
+<body class="pdf-consolidado">
+    <div class="header">
+        <h1>GRAVIMANAGER</h1>
+        <div class="subtitle">REDE GRAVIMÉTRICA FUNDAMENTAL</div>
+        <div class="subtitle">Relatório Consolidado de Medições Gravimétricas</div>
+    </div>
+
+    <div class="summary">
+        <strong>Total de Medições:</strong> {{ medicoes.count }}<br>
+        <strong>Data de Geração:</strong> {% now "d/m/Y H:i" %}
+    </div>
+
+    <table class="consolidado">
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Nome da Estação</th>
+                <th>Latitude</th>
+                <th>Longitude</th>
+                <th>Altitude (m)</th>
+                <th>Gravidade (mGal)</th>
+                <th>Anomalia Bouguer (mGal)</th>
+                <th>Incerteza (mGal)</th>
+                <th>Data</th>
+                <th>Operador</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for medicao in medicoes %}
+            <tr>
+                <td>{{ medicao.codigo_estacao }}</td>
+                <td>{{ medicao.nome_estacao }}</td>
+                <td>{{ medicao.latitude }}°</td>
+                <td>{{ medicao.longitude }}°</td>
+                <td>{% if medicao.altitude %}{{ medicao.altitude }}{% else %}-{% endif %}</td>
+                <td>{{ medicao.valor_gravidade }}</td>
+                <td>{% if medicao.anomalia_bouguer %}{{ medicao.anomalia_bouguer }}{% else %}-{% endif %}</td>
+                <td>{% if medicao.incerteza %}{{ medicao.incerteza }}{% else %}-{% endif %}</td>
+                <td>{{ medicao.data_medicao|date:"d/m/Y" }}</td>
+                <td>{% if medicao.operador %}{{ medicao.operador }}{% else %}-{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p>Documento gerado automaticamente em {% now "d/m/Y H:i" %}</p>
+        <p>Gravimanager - Rede Gravimétrica Fundamental</p>
+    </div>
+</body>
+</html>
