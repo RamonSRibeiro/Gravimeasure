@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard de Categorização de Usuários{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1>🎯 Dashboard de Categorização de Usuários</h1>
+            <p class="text-muted">Visualize e gerencie usuários por categoria e área de expertise</p>
+        </div>
+    </div>
+
+    <!-- ESTATÍSTICAS GERAIS -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total de Usuários</h5>
+                    <h2>{{ statistics.total }}</h2>
+                    <p class="small">{{ statistics.active }} ativos</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Com Categoria</h5>
+                    <h2>{{ statistics.by_role.academic.count|add:statistics.by_role.student.count|add:statistics.by_role.professional.count }}</h2>
+                    <p class="small">usuários categorizados</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Com Expertise</h5>
+                    <h2>{{ statistics.by_expertise|length }}</h2>
+                    <p class="small">áreas de especialização</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h5 class="card-title">Administradores</h5>
+                    <h2>{{ statistics.by_type.admin.count }}</h2>
+                    <p class="small">usuários staff</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CATEGORIAS DE PAPEL -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h3>📋 Categorias de Papel</h3>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        {% for role_key, role_data in statistics.by_role.items %}
+        <div class="col-md-4 mb-3">
+            <div class="card border-left-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">{{ role_data.label }}</h5>
+                            <p class="text-muted">{{ role_categories|get_item:role_key|get_item:'description' }}</p>
+                        </div>
+                        <span class="badge badge-primary badge-lg">{{ role_data.count }}</span>
+                    </div>
+                    <a href="{% url 'medicoes:user_category_list' 'role' role_key %}" 
+                       class="btn btn-sm btn-outline-primary mt-2">
+                        Ver usuários →
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- ÁREAS DE EXPERTISE -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h3>🔬 Áreas de Expertise</h3>
+        </div>
+    </div>
+
+    <div class="row">
+        {% for exp_key, exp_data in statistics.by_expertise.items %}
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">{{ exp_data.label }}</h5>
+                        <span class="badge badge-info">{{ exp_data.count }}</span>
+                    </div>
+                    <div class="progress mt-2" style="height: 1.5rem;">
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {% widthratio exp_data.count statistics.total 100 %}%"
+                             aria-valuenow="{{ exp_data.count }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="{{ statistics.total }}">
+                            {% widthratio exp_data.count statistics.total 100 %}%
+                        </div>
+                    </div>
+                    <a href="{% url 'medicoes:user_category_list' 'expertise' exp_key %}" 
+                       class="btn btn-sm btn-outline-info mt-2">
+                        Ver usuários →
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- TIPOS DE USUÁRIO -->
+    <div class="row mt-5 mb-4">
+        <div class="col-md-12">
+            <h3>👥 Tipos de Acesso</h3>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Quantidade</th>
+                            <th>Percentual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for type_key, type_data in statistics.by_type.items %}
+                        <tr>
+                            <td><strong>{{ type_data.label }}</strong></td>
+                            <td>{{ type_data.count }}</td>
+                            <td>
+                                <span class="badge badge-secondary">
+                                    {% widthratio type_data.count statistics.total 100 %}%
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .border-left-success {
+        border-left: 4px solid #28a745 !important;
+    }
+    
+    .badge-lg {
+        font-size: 1.2rem;
+        padding: 0.5rem 1rem;
+    }
+    
+    .card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+</style>
+
+<!-- Django template filter customizado -->
+<script>
+    // Se precisar de cálculos complexos no frontend
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Dashboard carregado');
+    });
+</script>
+{% endblock %}

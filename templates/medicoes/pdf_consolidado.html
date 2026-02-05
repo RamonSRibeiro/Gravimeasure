@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório Gravimétrico - Gravimanager</title>
+    <style>
+        /* Definições de Paged Media */
+        @page {
+            size: A4 landscape;
+            margin: 1cm;
+        }
+
+        /* Reset e Configurações Base */
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 9pt;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Cabeçalho do Documento */
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #2c3e50;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 16pt;
+            color: #2c3e50;
+            letter-spacing: 1px;
+        }
+
+        .header .subtitle {
+            font-size: 9pt;
+            font-weight: bold;
+            color: #555;
+            margin-top: 2px;
+        }
+
+        /* Metadados */
+        .summary {
+            margin-bottom: 10px;
+            font-size: 8pt;
+            color: #444;
+        }
+
+        /* Tabela Consolidada - Ajustes Críticos para PDF */
+        table.consolidado {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed; /* Força o cálculo de largura fixo */
+            word-wrap: break-word; /* Evita que o texto expanda a célula lateralmente */
+        }
+
+        table.consolidado thead {
+            display: table-header-group; /* Repete o cabeçalho em todas as páginas */
+        }
+
+        table.consolidado th {
+            background-color: #000000;
+            border: 0.5pt solid #000;
+            padding: 5px 2px;
+            font-size: 8pt;
+            text-align: center;
+        }
+
+        table.consolidado td {
+            border: 0.5pt solid #666;
+            padding: 4px 2px;
+            font-size: 7.5pt;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        /* Distribuição de Largura das Colunas (Total 100%) */
+        .w-cod { width: 6%; }
+        .w-est { width: 14%; }
+        .w-geo { width: 9%; }
+        .w-val { width: 10%; }
+        .w-dat { width: 9%; }
+
+        /* Prevenção de quebras órfãs */
+        tr {
+            page-break-inside: avoid;
+        }
+
+        /* Rodapé */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            font-size: 7pt;
+            text-align: right;
+            border-top: 0.5pt solid #ccc;
+            padding-top: 3px;
+        }
+    </style>
+</head>
+<body class="pdf-consolidado">
+    <div class="header">
+        <h1>GRAVIMANAGER</h1>
+        <div class="subtitle">REDE GRAVIMÉTRICA FUNDAMENTAL</div>
+        <div class="subtitle">Relatório Consolidado de Medições Gravimétricas</div>
+    </div>
+
+    <div class="summary">
+        <strong>Total de Medições:</strong> {{ medicoes.count }} | 
+        <strong>Gerado em:</strong> {% now "d/m/Y H:i" %}
+    </div>
+
+    <table class="consolidado">
+        <thead>
+            <tr>
+                <th class="w-cod">Cód.</th>
+                <th class="w-est">Estação</th>
+                <th class="w-geo">Lat</th>
+                <th class="w-geo">Long</th>
+                <th class="w-val">Alt (m)</th>
+                <th class="w-val">Grav (mGal)</th>
+                <th class="w-val">Bouguer</th>
+                <th class="w-val">Incert.</th>
+                <th class="w-dat">Data</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for medicao in medicoes %}
+            <tr>
+                <td>{{ medicao.codigo_estacao }}</td>
+                <td>{{ medicao.nome_estacao }}</td>
+                <td>{{ medicao.latitude }}°</td>
+                <td>{{ medicao.longitude }}°</td>
+                <td>{{ medicao.altitude|default:"-" }}</td>
+                <td>{{ medicao.valor_gravidade }}</td>
+                <td>{{ medicao.anomalia_bouguer|default:"-" }}</td>
+                <td>{{ medicao.incerteza|default:"-" }}</td>
+                <td>{{ medicao.data_medicao|date:"d/m/Y" }}</td>
+                <td>{{ medicao.operador|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="10">Nenhuma medição encontrada no banco de dados.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        Gravimanager - Sistema de Gestão de Dados Gravimétricos - Página <span class="page"></span>
+    </div>
+</body>
+</html>

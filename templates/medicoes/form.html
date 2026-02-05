@@ -1,0 +1,282 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Editar{% else %}Adicionar{% endif %} Medição - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .image-upload-group {
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #f9f9f9;
+        border: 1px solid var(--border-gray);
+        border-radius: 4px;
+    }
+    
+    .image-preview {
+        max-width: 100%;
+        max-height: 300px;
+        margin-top: 10px;
+        border-radius: 4px;
+        display: none;
+    }
+    
+    .image-preview.show {
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto; padding: 0 20px;">
+    <div style="background: white; padding: 30px; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <h1 style="color: var(--primary-blue); margin-top: 0;">
+            {% if object %}✏️ Editar Medição Gravimétrica{% else %}➕ Adicionar Nova Medição Gravimétrica{% endif %}
+        </h1>
+        
+        <form method="post" enctype="multipart/form-data" style="margin-top: 20px;">
+            {% csrf_token %}
+            
+            <!-- Erros globais do formulário -->
+            {% if form.non_field_errors %}
+            <div style="background: #ffebee; border: 1px solid #d32f2f; border-radius: 4px; padding: 15px; margin-bottom: 20px;">
+                <strong style="color: #d32f2f;">Erros encontrados:</strong>
+                {% for error in form.non_field_errors %}
+                <div style="color: #d32f2f; margin-top: 5px;">• {{ error }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <div style="margin-bottom: 20px;">
+                <h3 style="color: var(--primary-blue); border-bottom: 2px solid var(--primary-blue); padding-bottom: 10px; margin-bottom: 15px;">
+                    📍 Informações Básicas
+                </h3>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">{{ form.nome_estacao.label }}</label>
+                    {{ form.nome_estacao }}
+                    {% if form.nome_estacao.errors %}
+                    <div style="color: #d32f2f; font-size: 0.9rem; margin-top: 5px;">{{ form.nome_estacao.errors }}</div>
+                    {% endif %}
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">{{ form.codigo_estacao.label }}</label>
+                    {{ form.codigo_estacao }}
+                    {% if form.codigo_estacao.errors %}
+                    <div style="color: #d32f2f; font-size: 0.9rem; margin-top: 5px;">{{ form.codigo_estacao.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 style="color: var(--primary-blue); border-bottom: 2px solid var(--primary-blue); padding-bottom: 10px; margin-bottom: 15px;">
+                    📌 Localização
+                </h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">{{ form.latitude.label }}</label>
+                        {{ form.latitude }}
+                        {% if form.latitude.errors %}
+                        <div style="color: #d32f2f; font-size: 0.9rem; margin-top: 5px;">{{ form.latitude.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">{{ form.longitude.label }}</label>
+                        {{ form.longitude }}
+                        {% if form.longitude.errors %}
+                        <div style="color: #d32f2f; font-size: 0.9rem; margin-top: 5px;">{{ form.longitude.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">{{ form.altitude.label }}</label>
+                        {{ form.altitude }}
+                        {% if form.altitude.errors %}
+                        <div style="color: #d32f2f; font-size: 0.9rem; margin-top: 5px;">{{ form.altitude.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 style="color: var(--primary-blue); border-bottom: 2px solid var(--primary-blue); padding-bottom: 10px; margin-bottom: 15px;">
+                    ⚖️ Dados da Medição
+                </h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">{{ form.valor_gravidade.label }}</label>
+                        {{ form.valor_gravidade }}
+                        {% if form.valor_gravidade.errors %}
+                        <div style="color: #d32f2f; font-size: 0.9rem; margin-top: 5px;">{{ form.valor_gravidade.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">{{ form.incerteza.label }}</label>
+                        {{ form.incerteza }}
+                        {% if form.incerteza.errors %}
+                        <div style="color: #d32f2f; font-size: 0.9rem; margin-top: 5px;">{{ form.incerteza.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">{{ form.data_medicao.label }}</label>
+                        {{ form.data_medicao }}
+                        {% if form.data_medicao.errors %}
+                        <div style="color: #d32f2f; font-size: 0.9rem; margin-top: 5px;">{{ form.data_medicao.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background-color: #f0f5ff; padding: 15px; border-radius: 4px; border-left: 4px solid var(--primary-blue);">
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">{{ form.anomalia_bouguer.label }}</label>
+                        {{ form.anomalia_bouguer }}
+                        {% if form.anomalia_bouguer.errors %}
+                        <div style="color: #d32f2f; font-size: 0.9rem; margin-top: 5px;">{{ form.anomalia_bouguer.errors }}</div>
+                        {% endif %}
+                        <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 5px;">Deixe em branco para cálculo automático</small>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">{{ form.densidade_referencia.label }}</label>
+                        {{ form.densidade_referencia }}
+                        {% if form.densidade_referencia.errors %}
+                        <div style="color: #d32f2f; font-size: 0.9rem; margin-top: 5px;">{{ form.densidade_referencia.errors }}</div>
+                        {% endif %}
+                        <small style="color: #666; font-size: 0.85rem; display: block; margin-top: 5px;">Padrão: 2.67 g/cm³</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 style="color: var(--primary-blue); border-bottom: 2px solid var(--primary-blue); padding-bottom: 10px; margin-bottom: 15px;">
+                    🖼️ Documentação (Fotos e Croquis)
+                </h3>
+                
+                <!-- Foto da Estação -->
+                <div class="image-upload-group">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">{{ form.foto_estacao.label }}</label>
+                    <small style="color: #666;">Formato: JPG, PNG ou GIF | Tamanho máximo: 5MB</small>
+                    {{ form.foto_estacao }}
+                    {% if form.foto_estacao.errors %}
+                    <div style="color: #d32f2f; font-size: 0.9rem; margin-top: 5px;">{{ form.foto_estacao.errors }}</div>
+                    {% endif %}
+                    {% if object.foto_estacao %}
+                    <div style="margin-top: 10px;">
+                        <small style="color: #666;">Arquivo atual:</small><br>
+                        <img src="{{ object.foto_estacao.url }}" style="max-width: 200px; max-height: 200px; border-radius: 4px; margin-top: 5px;">
+                    </div>
+                    {% endif %}
+                    <img id="preview_foto" class="image-preview" />
+                </div>
+                
+                <!-- Croqui -->
+                <div class="image-upload-group">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">{{ form.croqui.label }}</label>
+                    <small style="color: #666;">Formato: JPG, PNG ou GIF | Tamanho máximo: 5MB</small>
+                    {{ form.croqui }}
+                    {% if form.croqui.errors %}
+                    <div style="color: #d32f2f; font-size: 0.9rem; margin-top: 5px;">{{ form.croqui.errors }}</div>
+                    {% endif %}
+                    {% if object.croqui %}
+                    <div style="margin-top: 10px;">
+                        <small style="color: #666;">Arquivo atual:</small><br>
+                        <img src="{{ object.croqui.url }}" style="max-width: 200px; max-height: 200px; border-radius: 4px; margin-top: 5px;">
+                    </div>
+                    {% endif %}
+                    <img id="preview_croqui" class="image-preview" />
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 style="color: var(--primary-blue); border-bottom: 2px solid var(--primary-blue); padding-bottom: 10px; margin-bottom: 15px;">
+                    📋 Informações Adicionais
+                </h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">{{ form.operador.label }}</label>
+                        {{ form.operador }}
+                        {% if form.operador.errors %}
+                        <div style="color: #d32f2f; font-size: 0.9rem; margin-top: 5px;">{{ form.operador.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">{{ form.instrumento.label }}</label>
+                        {{ form.instrumento }}
+                        {% if form.instrumento.errors %}
+                        <div style="color: #d32f2f; font-size: 0.9rem; margin-top: 5px;">{{ form.instrumento.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">{{ form.observacoes.label }}</label>
+                    {{ form.observacoes }}
+                    {% if form.observacoes.errors %}
+                    <div style="color: #d32f2f; font-size: 0.9rem; margin-top: 5px;">{{ form.observacoes.errors }}</div>
+                    {% endif %}
+                </div>
+                <div style="margin-top: 15px;">
+                    <label style="display: flex; align-items: center; gap: 10px; font-weight: bold;">
+                        {{ form.ativo }}
+                        {{ form.ativo.label }}
+                    </label>
+                    {% if form.ativo.errors %}
+                    <div style="color: #d32f2f; font-size: 0.9rem; margin-top: 5px;">{{ form.ativo.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 30px;">
+                <button type="submit" style="flex: 1; padding: 12px; background-color: var(--primary-blue); color: white; border: none; border-radius: 4px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: background-color 0.2s;">
+                    💾 {% if object %}Atualizar Medição{% else %}Criar Medição{% endif %}
+                </button>
+                <a href="{% url 'medicoes:medicao_lista' %}" style="flex: 1; padding: 12px; background-color: #666; color: white; text-decoration: none; border-radius: 4px; font-size: 1rem; font-weight: 700; text-align: center; transition: background-color 0.2s;">
+                    ✕ Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Loading Spinner -->
+<div class="spinner-overlay" id="spinnerOverlay"></div>
+<div class="spinner" id="spinner">
+    <div class="spinner-animation"></div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Preview para foto da estação
+    const fotoInput = document.getElementById('id_foto_estacao');
+    if (fotoInput) {
+        fotoInput.addEventListener('change', function(e) {
+            previewImage(e, 'preview_foto');
+        });
+    }
+    
+    // Preview para croqui
+    const croquiInput = document.getElementById('id_croqui');
+    if (croquiInput) {
+        croquiInput.addEventListener('change', function(e) {
+            previewImage(e, 'preview_croqui');
+        });
+    }
+    
+    function previewImage(event, previewId) {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+        const preview = document.getElementById(previewId);
+        
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.classList.add('show');
+        };
+        
+        if (file) {
+            reader.readAsDataURL(file);
+        }
+    }
+    
+    // Submit com spinner
+    document.querySelector('form').addEventListener('submit', function() {
+        document.getElementById('spinner').classList.add('show');
+        document.getElementById('spinnerOverlay').classList.add('show');
+    });
+});
+</script>
+
+{% endblock %}

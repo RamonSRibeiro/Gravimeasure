@@ -1,0 +1,306 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <!-- Seção do Mapa -->
+    <section class="map-section">
+        <h2 style="margin-top: 0; color: var(--primary-blue);">🗺️ Mapa Interativo de Estações Gravimétricas</h2>
+        <div class="responsive-map">
+            <div id="mapa-estacoes"></div>
+        </div>
+        
+        {% if medicoes %}
+        <div style="margin-top: 20px; padding: 15px; background: #f0f5ff; border-left: 4px solid var(--primary-blue); border-radius: 4px;">
+            <strong style="color: var(--primary-blue);">💡 Dica:</strong> Clique nos marcadores ou linhas da tabela para interagir com o mapa.
+        </div>
+        {% endif %}
+    </section>
+    
+    <!-- Sidebar de Downloads -->
+    <aside class="sidebar-downloads">
+        <h3>📋 Relatórios Disponíveis</h3>
+        <p>Selecione uma medição para visualizar detalhes ou fazer download do PDF:</p>
+        
+        {% if medicoes %}
+        <ul class="download-list">
+            {% for medicao in medicoes %}
+            <li class="download-item" data-medicao-id="{{ medicao.id }}" data-latitude="{{ medicao.latitude }}" data-longitude="{{ medicao.longitude }}" style="cursor: pointer;">
+                <a href="{% url 'medicoes:medicao_detail' medicao.codigo_estacao %}" class="download-link">
+                    <span class="pdf-icon">📄</span>
+                    <div>
+                        <strong>{{ medicao.nome_estacao }}</strong><br>
+                        <span style="font-size: 0.8rem; color: #666;">{{ medicao.codigo_estacao }}</span><br>
+                        <span style="font-size: 0.75rem; color: #999;">{{ medicao.data_medicao|date:"d/m/Y" }}</span>
+                    </div>
+                </a>
+                <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-gray);">
+                    <a href="{% url 'medicoes:medicao_pdf' medicao.pk %}" style="display: inline-block; padding: 4px 8px; background: var(--success-green); color: white; text-decoration: none; border-radius: 3px; font-size: 0.75rem; font-weight: 700;">📥 PDF</a>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        
+        {% if user.is_operator or user.is_admin %}
+        <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid var(--primary-blue);">
+            <a href="{% url 'medicoes:medicao_adicionar' %}" style="display: block; text-align: center; padding: 10px; background-color: var(--primary-blue); color: white; text-decoration: none; border-radius: 4px; font-weight: 700;">
+                ➕ Adicionar Medição
+            </a>
+        </div>
+        {% endif %}
+        
+        {% if medicoes|length > 1 %}
+        <div style="margin-top: 15px;">
+            <a href="{% url 'medicoes:medicao_pdf_consolidado' %}" style="display: block; text-align: center; padding: 10px; background-color: var(--accent-blue); color: white; text-decoration: none; border-radius: 4px; font-weight: 700; border-top: 2px solid var(--border-gray); margin-top: 15px;">
+                📊 Consolidado
+            </a>
+        </div>
+        {% endif %}
+        
+        <div style="margin-top: 15px;">
+            <a href="{% url 'medicoes:medicao_lista' %}" style="display: block; text-align: center; padding: 10px; background-color: #666; color: white; text-decoration: none; border-radius: 4px; font-weight: 700;">
+                📑 Ver Todos
+            </a>
+        </div>
+        
+        {% else %}
+        <div style="padding: 20px; text-align: center; color: #666;">
+            <p>Nenhuma medição cadastrada ainda.</p>
+            {% if user.is_operator or user.is_admin %}
+            <a href="{% url 'medicoes:medicao_adicionar' %}" style="display: inline-block; padding: 10px 20px; background-color: var(--primary-blue); color: white; text-decoration: none; border-radius: 4px; font-weight: 700; margin-top: 10px;">
+                ➕ Adicionar Primeira Medição
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </aside>
+</div>
+
+<!-- Loading Spinner -->
+<div class="spinner-overlay" id="spinnerOverlay"></div>
+<div class="spinner" id="spinner">
+    <div class="spinner-animation"></div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+console.log('🗺️ Script iniciado - aguardando DOM...');
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('✅ DOM carregado');
+    
+    // Verificar se Leaflet está disponível
+    if (typeof L === 'undefined') {
+        console.error('❌ Leaflet não foi carregado!');
+        alert('Erro: Biblioteca Leaflet não foi carregada. Recarregue a página.');
+        return;
+    }
+    console.log('✅ Leaflet disponível');
+    
+    // Verificar se o div existe
+    const mapDiv = document.getElementById('mapa-estacoes');
+    if (!mapDiv) {
+        console.error('❌ Div #mapa-estacoes não encontrado!');
+        alert('Erro: Container do mapa não encontrado no HTML.');
+        return;
+    }
+    console.log('✅ Div #mapa-estacoes encontrado');
+    
+    // Inicializar o mapa
+    let mapa;
+    try {
+        mapa = L.map('mapa-estacoes').setView([-15.7975, -47.8919], 4);
+        console.log('✅ Mapa Leaflet inicializado');
+    } catch(e) {
+        console.error('❌ Erro ao inicializar mapa:', e);
+        alert('Erro ao inicializar mapa: ' + e.message);
+        return;
+    }
+    
+    // Adicionar camada do OpenStreetMap
+    try {
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(mapa);
+        console.log('✅ Camadas do mapa adicionadas');
+    } catch(e) {
+        console.error('❌ Erro ao adicionar tile layer:', e);
+    }
+    
+    let markers = {};
+    let currentMarker = null;
+    
+    // Carregar dados de medições via API
+    const spinnerEl = document.getElementById('spinner');
+    const spinnerOverlayEl = document.getElementById('spinnerOverlay');
+    
+    if (spinnerEl) spinnerEl.classList.add('show');
+    if (spinnerOverlayEl) spinnerOverlayEl.classList.add('show');
+    
+    console.log('🔄 Iniciando fetch para /api/dados-mapa/');
+    
+    fetch('{% url "medicoes:medicoes_api" %}', {
+        credentials: 'same-origin'
+    })
+        .then(response => {
+            console.log('📡 Resposta recebida - status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('✅ JSON parseado - dados:', data);
+            
+            if (!data.success) {
+                console.warn('⚠️ API retornou success=false:', data);
+                throw new Error('API returned success=false');
+            }
+            
+            if (!data.medicoes || data.medicoes.length === 0) {
+                console.warn('⚠️ Nenhuma medição disponível');
+                ocultarSpinner();
+                return;
+            }
+            
+            console.log(`📍 Criando ${data.medicoes.length} marcadores...`);
+            
+            let markerCount = 0;
+            data.medicoes.forEach(medicao => {
+                try {
+                    const marker = L.marker([medicao.latitude, medicao.longitude], {
+                        icon: L.icon({
+                            iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon.png',
+                            shadowUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-shadow.png',
+                            iconSize: [25, 41],
+                            iconAnchor: [12, 41],
+                            popupAnchor: [1, -34],
+                            shadowSize: [41, 41]
+                        })
+                    });
+                    
+                    // Popup com informações
+                    const popupContent = `
+                        <div style="font-weight: bold; color: var(--primary-blue); margin-bottom: 8px;">
+                            ${medicao.nome_estacao}
+                        </div>
+                        <div style="font-size: 0.85rem;">
+                            <strong>Código:</strong> ${medicao.codigo_estacao}<br>
+                            <strong>Altitude:</strong> ${medicao.altitude || 'N/A'} m<br>
+                            <strong>Gravidade:</strong> ${medicao.gravidade_medida} mGal<br>
+                            <strong>Data:</strong> ${medicao.data_medicao}<br>
+                            <strong>Operador:</strong> ${medicao.operador}
+                        </div>
+                        <div style="margin-top: 10px; display: flex; gap: 5px;">
+                            <a href="/medicao/${medicao.codigo_estacao}/" style="flex: 1; padding: 5px; background: var(--primary-blue); color: white; text-decoration: none; border-radius: 3px; font-size: 0.75rem; text-align: center; font-weight: 700;">📄 Detalhes</a>
+                            <a href="${medicao.url_pdf}" style="flex: 1; padding: 5px; background: #d32f2f; color: white; text-decoration: none; border-radius: 3px; font-size: 0.75rem; text-align: center; font-weight: 700;">📥 PDF</a>
+                        </div>
+                    `;
+                    
+                    marker.bindPopup(popupContent);
+                    marker.addTo(mapa);
+                    
+                    // Interatividade com sidebar
+                    marker.on('click', function() {
+                        highlightRow(medicao.id);
+                        currentMarker = marker;
+                    });
+                    
+                    markers[medicao.id] = marker;
+                    markerCount++;
+                } catch(e) {
+                    console.warn(`⚠️ Erro ao criar marcador para ${medicao.nome_estacao}:`, e);
+                }
+            });
+            
+            console.log(`✅ ${markerCount} marcadores criados com sucesso`);
+            
+            // Interatividade da sidebar com o mapa
+            try {
+                document.querySelectorAll('.download-item').forEach(item => {
+                    item.addEventListener('click', function(e) {
+                        if (e.target.closest('a')) return; // Se clicou num link, não fazer zoom
+                        
+                        const medicaoId = this.dataset.medicaoId;
+                        const lat = parseFloat(this.dataset.latitude);
+                        const lon = parseFloat(this.dataset.longitude);
+                        
+                        // Zoom e center no marcador
+                        mapa.setView([lat, lon], 14);
+                        
+                        // Abrir popup
+                        if (markers[medicaoId]) {
+                            markers[medicaoId].openPopup();
+                            currentMarker = markers[medicaoId];
+                        }
+                        
+                        highlightRow(medicaoId);
+                    });
+                    
+                    // Highlight row
+                    item.addEventListener('mouseenter', function() {
+                        this.style.backgroundColor = '#e3f2fd';
+                    });
+                    item.addEventListener('mouseleave', function() {
+                        this.style.backgroundColor = '#fafafa';
+                    });
+                });
+            } catch(e) {
+                console.warn('⚠️ Erro ao configurar interatividade sidebar:', e);
+            }
+            
+            ocultarSpinner();
+        })
+        .catch(error => {
+            console.error('❌ Erro ao carregar mapa:', error);
+            console.error('Stack:', error.stack);
+            ocultarSpinner();
+            
+            // Mostrar mensagem de erro amigável
+            const errorMsg = `
+Erro ao carregar as medições:
+${error.message}
+
+Por favor:
+1. Recarregue a página (Ctrl+F5)
+2. Verifique se está logado
+3. Verifique console (F12) para mais detalhes
+            `;
+            
+            console.error(errorMsg);
+        });
+    
+    function highlightRow(medicaoId) {
+        document.querySelectorAll('.download-item').forEach(item => {
+            if (item.dataset.medicaoId == medicaoId) {
+                item.style.backgroundColor = '#e3f2fd';
+                item.style.borderColor = 'var(--primary-blue)';
+                item.style.borderWidth = '2px';
+            } else {
+                item.style.backgroundColor = '#fafafa';
+                item.style.borderColor = 'var(--border-gray)';
+                item.style.borderWidth = '1px';
+            }
+        });
+    }
+    
+    function ocultarSpinner() {
+        console.log('🛑 Ocultando spinner');
+        const spinnerEl = document.getElementById('spinner');
+        const spinnerOverlayEl = document.getElementById('spinnerOverlay');
+        if (spinnerEl) spinnerEl.classList.remove('show');
+        if (spinnerOverlayEl) spinnerOverlayEl.classList.remove('show');
+        console.log('✅ Spinner oculto');
+    }
+});
+
+console.log('✅ Script carregado e aguardando DOMContentLoaded...');
+</script>
+{% endblock %}

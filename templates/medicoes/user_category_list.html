@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Usuários - {{ category_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1>{{ category_name }}</h1>
+            <p class="text-muted">
+                <a href="{% url 'medicoes:user_categories_dashboard' %}">← Voltar ao Dashboard</a>
+            </p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="alert alert-info">
+                <strong>{{ count }}</strong> usuário(s) nesta categoria
+            </div>
+        </div>
+    </div>
+
+    {% if users %}
+    <div class="table-responsive">
+        <table class="table table-hover table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>Usuário</th>
+                    <th>Nome Completo</th>
+                    <th>Email</th>
+                    <th>Categoria</th>
+                    <th>Organização</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>
+                        <strong>{{ user.username }}</strong>
+                    </td>
+                    <td>{{ user.first_name }} {{ user.last_name }}</td>
+                    <td>
+                        <a href="mailto:{{ user.email }}">{{ user.email }}</a>
+                    </td>
+                    <td>
+                        <span class="badge badge-primary">
+                            {{ user.get_role_category_display }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if user.organization %}
+                            {{ user.organization }}
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'medicoes:user_profile_categorization' user.id %}" 
+                           class="btn btn-sm btn-outline-primary">
+                            Detalhar
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-warning">
+        Nenhum usuário encontrado nesta categoria.
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

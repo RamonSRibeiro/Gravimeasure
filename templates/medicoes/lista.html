@@ -1,0 +1,289 @@
+{% extends 'base.html' %}
+
+{% block title %}Lista de Medições - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-section {
+        background: white;
+        padding: 20px;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+
+    .filter-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .filter-group label {
+        font-weight: 700;
+        color: var(--primary-blue);
+        font-size: 0.85rem;
+        margin-bottom: 5px;
+    }
+
+    .filter-group input,
+    .filter-group select {
+        padding: 8px 10px;
+        border: 1px solid var(--border-gray);
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+
+    /* Bulk Delete */
+    .bulk-actions {
+        margin-bottom: 15px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .bulk-actions button {
+        padding: 8px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 700;
+    }
+
+    .btn-select {
+        background-color: #555;
+        color: white;
+    }
+
+    .btn-delete {
+        background-color: #c0392b;
+        color: white;
+    }
+
+    @media (max-width: 768px) {
+        .filter-row {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1 style="color: var(--primary-blue); margin: 0;">Medições Gravimétricas</h1>
+
+        {% if user.is_operator or user.is_admin %}
+        <div style="display: flex; gap: 10px;">
+            <a href="{% url 'medicoes:importar_excel' %}"
+               style="padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.2rem;">📊</span> Importar Excel
+            </a>
+
+            <a href="{% url 'medicoes:medicao_adicionar' %}"
+               style="padding: 10px 20px; background-color: var(--primary-blue); color: white; text-decoration: none; border-radius: 4px;">
+                + Adicionar Medição
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Filtros -->
+    <div class="filter-section">
+        <form method="get" id="filterForm">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label>Buscar</label>
+                    <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Nome, código ou operador..." />
+                </div>
+
+                <div class="filter-group">
+                    <label>Data Inicial</label>
+                    <input type="date" name="data_inicio" value="{{ request.GET.data_inicio }}" />
+                </div>
+
+                <div class="filter-group">
+                    <label>Data Final</label>
+                    <input type="date" name="data_fim" value="{{ request.GET.data_fim }}" />
+                </div>
+            </div>
+
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label>Operador</label>
+                    <input type="text" name="operador" value="{{ request.GET.operador }}" placeholder="Nome do operador..." />
+                </div>
+
+                <div class="filter-group">
+                    <label>Gravidade Mínima (mGal)</label>
+                    <input type="number" step="0.001" name="gravidade_min" value="{{ request.GET.gravidade_min }}" />
+                </div>
+
+                <div class="filter-group">
+                    <label>Gravidade Máxima (mGal)</label>
+                    <input type="number" step="0.001" name="gravidade_max" value="{{ request.GET.gravidade_max }}" />
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button type="submit"
+                        style="padding: 10px 20px; background-color: var(--primary-blue); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 700;">
+                    🔍 Filtrar
+                </button>
+
+                {% if request.GET.search or request.GET.data_inicio or request.GET.data_fim or request.GET.operador or request.GET.gravidade_min or request.GET.gravidade_max %}
+                <a href="{% url 'medicoes:medicao_lista' %}"
+                   style="padding: 10px 20px; background-color: #666; color: white; text-decoration: none; border-radius: 4px; font-weight: 700;">
+                    ✕ Limpar Filtros
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <div style="background: white; padding: 20px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+
+        {% if medicoes %}
+
+        <!-- ✅ Bulk Actions (somente admin) -->
+        {% if user.is_admin %}
+        <form id="bulkDeleteForm">
+            {% csrf_token %}
+
+            <div class="bulk-actions">
+                <button type="button" class="btn-select" onclick="selecionarTodas()">
+                    ✔ Selecionar Todas
+                </button>
+
+                <button type="button" class="btn-delete" onclick="apagarSelecionadas()">
+                    🗑 Apagar Selecionadas
+                </button>
+            </div>
+        </form>
+        {% endif %}
+
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        {% if user.is_admin %}
+                        <th></th>
+                        {% endif %}
+                        <th>Código</th>
+                        <th>Nome da Estação</th>
+                        <th>Localização</th>
+                        <th>Gravidade (mGal)</th>
+                        <th>Anomalia Bouguer (mGal)</th>
+                        <th>Data</th>
+                        <th style="text-align: center;">Ações</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for medicao in medicoes %}
+                    <tr>
+                        {% if user.is_admin %}
+                        <td>
+                            <input type="checkbox" name="ids" value="{{ medicao.id }}">
+                        </td>
+                        {% endif %}
+
+                        <td><strong>{{ medicao.codigo_estacao }}</strong></td>
+
+                        <td>
+                            <a href="{% url 'medicoes:medicao_detail' medicao.codigo_estacao %}"
+                               style="color: var(--primary-blue); text-decoration: none; font-weight: 600;">
+                                {{ medicao.nome_estacao }}
+                            </a>
+                        </td>
+
+                        <td style="font-size: 0.9rem;">
+                            {{ medicao.latitude|floatformat:4 }}°, {{ medicao.longitude|floatformat:4 }}°
+                            {% if medicao.altitude %}
+                                <br><span style="color: #666;">Alt: {{ medicao.altitude }}m</span>
+                            {% endif %}
+                        </td>
+
+                        <td>{{ medicao.valor_gravidade }}</td>
+
+                        <td>
+                            {% if medicao.anomalia_bouguer %}
+                                <strong style="color: var(--primary-blue);">{{ medicao.anomalia_bouguer }}</strong>
+                            {% else %}
+                                <span style="color: #999;">-</span>
+                            {% endif %}
+                        </td>
+
+                        <td>{{ medicao.data_medicao|date:"d/m/Y" }}</td>
+
+                        <td style="text-align: center; font-size: 1.1rem;">
+                            <a href="{% url 'medicoes:medicao_pdf' medicao.pk %}" title="PDF">📄</a>
+
+                            {% if user.is_operator or user.is_admin %}
+                            <a href="{% url 'medicoes:medicao_editar' medicao.pk %}" title="Editar">✏️</a>
+                            {% endif %}
+
+                            {% if user.is_admin %}
+                            <a href="{% url 'medicoes:medicao_excluir' medicao.pk %}" title="Excluir">🗑️</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+
+        {% else %}
+        <div style="text-align: center; padding: 40px; color: #666;">
+            <p style="font-size: 1.2rem;">Nenhuma medição encontrada.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function selecionarTodas() {
+    document.querySelectorAll("input[name='ids']")
+        .forEach(cb => cb.checked = true);
+}
+
+function apagarSelecionadas() {
+
+    let selecionadas = [];
+    document.querySelectorAll("input[name='ids']:checked")
+        .forEach(cb => selecionadas.push(cb.value));
+
+    if (selecionadas.length === 0) {
+        alert("Nenhuma estação selecionada.");
+        return;
+    }
+
+    if (!confirm("Tem certeza que deseja apagar as medições selecionadas?")) {
+        return;
+    }
+
+    fetch("{% url 'medicoes:bulk_delete' %}", {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value,
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: selecionadas.map(id => "ids[]=" + id).join("&")
+    })
+    .then(resp => resp.json())
+    .then(data => {
+        alert(data.message);
+        location.reload();
+    })
+    .catch(err => alert("Erro ao apagar: " + err));
+}
+</script>
+
+{% endblock %}
