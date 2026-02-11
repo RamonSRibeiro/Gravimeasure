@@ -9,7 +9,7 @@ import os
 import django
 
 # Configurar Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'bdg_project.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gravimeasure.settings')
 django.setup()
 
 from medicoes.models import AreaOfExpertise

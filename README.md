@@ -93,7 +93,7 @@ python manage.py runserver
 ## Estrutura do Projeto
 ```
 BDG/
-├── bdg_project/          # Configurações principais do Django
+├── gravimeasure/          # Configurações principais do Django
 │   ├── settings.py       # Configurações da aplicação
 │   ├── urls.py          # Rotas principais
 │   └── wsgi.py          # Arquivo WSGI para deploy
