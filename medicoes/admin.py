@@ -8,6 +8,7 @@ class MedicaoGravimetricaAdmin(admin.ModelAdmin):
     list_display = [
         'codigo_estacao',
         'nome_estacao',
+        'marker_icon',
         'usuario',
         'latitude',
         'longitude',
@@ -25,6 +26,10 @@ class MedicaoGravimetricaAdmin(admin.ModelAdmin):
         }),
         ('Localização', {
             'fields': ('latitude', 'longitude', 'altitude')
+        }),
+        ('Mapa', {
+            'fields': ('marker_icon', 'marker_custom_url'),
+            'description': 'Configurações visuais do marcador no mapa (apenas para administradores)'
         }),
         ('Dados da Medição', {
             'fields': ('valor_gravidade', 'incerteza', 'anomalia_bouguer', 'densidade_referencia', 'data_medicao')

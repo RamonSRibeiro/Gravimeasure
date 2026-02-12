@@ -6,6 +6,16 @@ from decimal import Decimal, ROUND_HALF_UP
 import math
 from datetime import datetime
 
+# Opções de ícone para marcadores no mapa
+MARKER_ICON_CHOICES = (
+    ('default', 'Padrão (azul)'),
+    ('red', 'Vermelho'),
+    ('green', 'Verde'),
+    ('orange', 'Laranja'),
+    ('purple', 'Roxo'),
+    ('dark', 'Escuro'),
+    ('custom', 'URL personalizada'),
+)
 
 class AreaOfExpertise(models.Model):
     """Lista de áreas de atuação/experiência para categorizar usuários."""
@@ -256,6 +266,22 @@ class MedicaoGravimetrica(models.Model):
             FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png', 'gif']),
             validar_imagem_tamanho
         ]
+    )
+    # Configuração do marcador exibido no mapa (administrador pode alterar)
+    marker_icon = models.CharField(
+        max_length=50,
+        choices=MARKER_ICON_CHOICES,
+        default='default',
+        verbose_name='Ícone do Marcador',
+        help_text='Selecione o estilo do marcador a ser exibido no mapa (apenas para administradores)'
+    )
+
+    marker_custom_url = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        verbose_name='URL do Ícone Personalizado',
+        help_text='Informe a URL completa para um ícone personalizado quando escolher "URL personalizada".'
     )
     
     # Metadados

@@ -214,6 +214,8 @@ class MedicaoGravimetricaForm(forms.ModelForm):
             'observacoes',
             'foto_estacao',
             'croqui',
+            'marker_icon',
+            'marker_custom_url',
             'ativo'
         ]
         widgets = {
@@ -287,6 +289,13 @@ class MedicaoGravimetricaForm(forms.ModelForm):
                 'accept': 'image/*',
                 'id': 'id_croqui'
             }),
+            'marker_icon': forms.Select(attrs={
+                'class': 'form-control'
+            }),
+            'marker_custom_url': forms.URLInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'https://example.com/meu-icone.png'
+            }),
             'ativo': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
             }),
@@ -307,6 +316,8 @@ class MedicaoGravimetricaForm(forms.ModelForm):
             'observacoes': 'Observações',
             'foto_estacao': 'Foto da Estação',
             'croqui': 'Croqui/Desenho',
+            'marker_icon': 'Ícone do Marcador',
+            'marker_custom_url': 'URL do Ícone Personalizado',
             'ativo': 'Ativo'
         }
     

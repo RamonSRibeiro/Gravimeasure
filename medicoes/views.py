@@ -573,6 +573,8 @@ def medicoes_api(request):
                     'data_medicao': medicao.data_medicao.strftime('%d/%m/%Y'),
                     'gravidade_medida': float(medicao.valor_gravidade),
                     'operador': medicao.operador or 'N/A',
+                    'marker_icon': medicao.marker_icon if hasattr(medicao, 'marker_icon') else 'default',
+                    'marker_custom_url': medicao.marker_custom_url if hasattr(medicao, 'marker_custom_url') else None,
                     'url_pdf': f'/medicoes/{medicao.pk}/pdf/',
                 })
             except Exception as e:

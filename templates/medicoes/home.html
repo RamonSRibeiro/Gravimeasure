@@ -175,9 +175,27 @@ document.addEventListener('DOMContentLoaded', function() {
             let markerCount = 0;
             data.medicoes.forEach(medicao => {
                 try {
+                    // Mapeamento de ícones por opção
+                    const iconMap = {
+                        'default': 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-blue.png',
+                        'red': 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-red.png',
+                        'green': 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-green.png',
+                        'orange': 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-orange.png',
+                        'purple': 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-violet.png',
+                        'dark': 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-black.png'
+                    };
+
+                    // Selecionar URL do ícone: personalizado quando aplicável, caso contrário mapa de cores
+                    let iconUrl = iconMap['default'];
+                    if (medicao.marker_icon === 'custom' && medicao.marker_custom_url) {
+                        iconUrl = medicao.marker_custom_url;
+                    } else if (medicao.marker_icon && iconMap[medicao.marker_icon]) {
+                        iconUrl = iconMap[medicao.marker_icon];
+                    }
+
                     const marker = L.marker([medicao.latitude, medicao.longitude], {
                         icon: L.icon({
-                            iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon.png',
+                            iconUrl: iconUrl,
                             shadowUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-shadow.png',
                             iconSize: [25, 41],
                             iconAnchor: [12, 41],

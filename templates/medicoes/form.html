@@ -181,6 +181,30 @@
                     <img id="preview_croqui" class="image-preview" />
                 </div>
             </div>
+
+            <div style="margin-bottom: 20px;">
+                <h3 style="color: var(--primary-blue); border-bottom: 2px solid var(--primary-blue); padding-bottom: 10px; margin-bottom: 15px;">
+                    🗺️ Mapa / Marcador
+                </h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; align-items: end;">
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">{{ form.marker_icon.label }}</label>
+                        {{ form.marker_icon }}
+                        {% if form.marker_icon.errors %}
+                        <div style="color: #d32f2f; font-size: 0.9rem; margin-top: 5px;">{{ form.marker_icon.errors }}</div>
+                        {% endif %}
+                        <small style="color: #666; display: block; margin-top: 6px;">Escolha a cor/estilo do marcador exibido no mapa.</small>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">{{ form.marker_custom_url.label }}</label>
+                        {{ form.marker_custom_url }}
+                        {% if form.marker_custom_url.errors %}
+                        <div style="color: #d32f2f; font-size: 0.9rem; margin-top: 5px;">{{ form.marker_custom_url.errors }}</div>
+                        {% endif %}
+                        <small id="help_custom_url" style="color: #666; display: block; margin-top: 6px;">Preencha somente quando selecionar "URL personalizada".</small>
+                    </div>
+                </div>
+            </div>
             
             <div style="margin-bottom: 20px;">
                 <h3 style="color: var(--primary-blue); border-bottom: 2px solid var(--primary-blue); padding-bottom: 10px; margin-bottom: 15px;">
@@ -276,6 +300,27 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('spinner').classList.add('show');
         document.getElementById('spinnerOverlay').classList.add('show');
     });
+
+    // Mostrar/ocultar campo de URL personalizada dependendo da escolha
+    const markerSelect = document.getElementById('id_marker_icon');
+    const customUrlField = document.getElementById('id_marker_custom_url');
+    const helpCustom = document.getElementById('help_custom_url');
+    function toggleCustomUrl() {
+        if (!markerSelect || !customUrlField) return;
+        if (markerSelect.value === 'custom') {
+            customUrlField.parentElement.style.display = 'block';
+            if (helpCustom) helpCustom.style.display = 'block';
+        } else {
+            customUrlField.parentElement.style.display = 'none';
+            if (helpCustom) helpCustom.style.display = 'none';
+            customUrlField.value = '';
+        }
+    }
+    if (markerSelect) {
+        markerSelect.addEventListener('change', toggleCustomUrl);
+        // Inicializa visibilidade
+        toggleCustomUrl();
+    }
 });
 </script>
 
