@@ -1,4 +1,5 @@
 from django import forms
+from django.core.exceptions import ValidationError
 from django.contrib.auth.forms import UserCreationForm
 from .models import MedicaoGravimetrica, CustomUser, validar_gravidade_range, AreaOfExpertise
 
@@ -13,6 +14,7 @@ class SignUpForm(UserCreationForm):
             'placeholder': 'seu.email@exemplo.com'
         })
     )
+
     
     first_name = forms.CharField(
         max_length=30,
@@ -52,12 +54,11 @@ class SignUpForm(UserCreationForm):
         widget=forms.Select(attrs={'class': 'form-control'})
     )
 
-    areas = forms.ModelChoiceField(
+    areas = forms.ModelMultipleChoiceField(
         queryset=AreaOfExpertise.objects.all(),
         required=False,
         label='Áreas de Atuação',
-        widget=forms.RadioSelect,
-        empty_label=None
+        widget=forms.CheckboxSelectMultiple
     )
     
     phone = forms.CharField(
@@ -111,6 +112,8 @@ class SignUpForm(UserCreationForm):
         if CustomUser.objects.filter(email=email).exists():
             raise forms.ValidationError('Este email já está cadastrado no sistema.')
         return email
+
+    # Email will be confirmed via activation link sent by email
     
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -130,10 +133,10 @@ class SignUpForm(UserCreationForm):
         
         if commit:
             user.save()
-            # salvar a área, se houver
-            area = self.cleaned_data.get('areas')
-            if area:
-                user.areas.set([area])
+            # salvar as áreas selecionadas (ManyToMany)
+            areas = self.cleaned_data.get('areas')
+            if areas:
+                user.areas.set(areas)
             else:
                 user.areas.clear()
         return user
@@ -321,19 +324,15 @@ class MedicaoGravimetricaForm(forms.ModelForm):
             'ativo': 'Ativo'
         }
     
-    def clean(self):
-        cleaned_data = super().clean()
-        latitude = cleaned_data.get('latitude')
-        longitude = cleaned_data.get('longitude')
-        valor_gravidade = cleaned_data.get('valor_gravidade')
-        
-        if valor_gravidade:
-            try:
-                validar_gravidade_range(float(valor_gravidade))
-            except forms.ValidationError as e:
-                self.add_error('valor_gravidade', e.message)
-        
-        return cleaned_data
+    def clean_valor_gravidade(self):
+        valor = self.cleaned_data.get('valor_gravidade')
+        if valor in (None, ''):
+            return valor
+        try:
+            validar_gravidade_range(float(valor))
+        except ValidationError as e:
+            raise forms.ValidationError(e.messages)
+        return valor
 
 
 class UploadExcelForm(forms.Form):

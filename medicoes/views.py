@@ -16,6 +16,16 @@ from .models import MedicaoGravimetrica, CustomUser
 from .forms import MedicaoGravimetricaForm, SignUpForm, LoginForm, UserProfileForm
 from .models import MedicaoGravimetrica
 from .forms import UploadExcelForm
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
+from django.conf import settings
+import secrets
+from django.utils import timezone
+from datetime import timedelta
+from django.contrib.auth.hashers import make_password
+from .models import PendingRegistration, AreaOfExpertise
 
 logger = logging.getLogger(__name__)
 
@@ -33,12 +43,52 @@ def signup_view(request):
     if request.method == 'POST':
         form = SignUpForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            messages.success(
-                request,
-                f'Bem-vindo {user.first_name}! Sua conta foi criada com sucesso. '
-                f'Agora você pode fazer login.'
+            # criar registro pendente (não criar usuário ainda)
+            email = form.cleaned_data.get('email')
+            raw_password = form.cleaned_data.get('password1')
+            # prevenir duplicatas novamente
+            if CustomUser.objects.filter(email=email).exists() or PendingRegistration.objects.filter(email=email).exists():
+                messages.error(request, 'Este email já está em uso ou aguardando ativação.')
+                return redirect('medicoes:signup')
+
+            token = secrets.token_urlsafe(32)
+            # preparar payload com senha hasheada e demais campos
+            payload = {
+                'first_name': form.cleaned_data.get('first_name'),
+                'last_name': form.cleaned_data.get('last_name'),
+                'user_type': form.cleaned_data.get('user_type'),
+                'role_category': form.cleaned_data.get('role_category'),
+                'phone': form.cleaned_data.get('phone'),
+                'organization': form.cleaned_data.get('organization'),
+                'password': make_password(raw_password),
+                'areas': [a.pk for a in form.cleaned_data.get('areas')],
+            }
+
+            # create pending but attempt to send activation email; if sending fails, remove pending and show error
+            pending = PendingRegistration.objects.create(email=email, token=token, data=payload)
+
+            uid = urlsafe_base64_encode(force_bytes(pending.pk))
+            activation_link = request.build_absolute_uri(
+                reverse_lazy('medicoes:activate', kwargs={'uidb64': uid, 'token': token})
             )
+            subject = 'Ative sua conta'
+            message = render_to_string('medicoes/account_activation_email.html', {
+                'user': {'first_name': payload.get('first_name'), 'username': email.split('@')[0]},
+                'activation_link': activation_link,
+            })
+            try:
+                send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False)
+            except Exception:
+                # remove pending registration if email could not be sent
+                try:
+                    pending.delete()
+                except Exception:
+                    logger.exception('Falha ao remover PendingRegistration após erro de envio de email')
+                # attach non-field error to form and re-render signup page so user can try another email
+                form.add_error(None, 'Falha ao enviar email de ativação. Por favor verifique o endereço de email e tente novamente.')
+                return render(request, 'medicoes/signup.html', {'form': form})
+
+            messages.success(request, 'Conta criada. Verifique seu email para ativar a conta.')
             return redirect('medicoes:login')
         else:
             for field, errors in form.errors.items():
@@ -113,6 +163,66 @@ def profile_view(request):
         'form': form,
         'user_type_display': request.user.get_user_type_display()
     })
+
+
+@require_http_methods(["GET"])
+def activate_account(request, uidb64, token):
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        pending = PendingRegistration.objects.get(pk=uid, token=token)
+    except (TypeError, ValueError, OverflowError, PendingRegistration.DoesNotExist):
+        pending = None
+
+    if pending is None:
+        messages.error(request, 'Link de ativação inválido ou expirado.')
+        return redirect('medicoes:signup')
+
+    # verificar expiração (7 dias)
+    if timezone.now() - pending.created_at > timedelta(days=7):
+        pending.delete()
+        messages.error(request, 'O link expirou. Por favor registre-se novamente.')
+        return redirect('medicoes:signup')
+
+    # Criar usuário a partir dos dados pendentes
+    data = pending.data
+    email = pending.email
+    if CustomUser.objects.filter(email=email).exists():
+        pending.delete()
+        messages.error(request, 'Este email já foi registrado.')
+        return redirect('medicoes:login')
+
+    # gerar username único a partir do email
+    base_username = email.split('@')[0]
+    username = base_username
+    counter = 1
+    while CustomUser.objects.filter(username=username).exists():
+        username = f"{base_username}{counter}"
+        counter += 1
+
+    user = CustomUser(
+        username=username,
+        email=email,
+        first_name=data.get('first_name') or '',
+        last_name=data.get('last_name') or '',
+        user_type=data.get('user_type') or 'viewer',
+        role_category=data.get('role_category') or 'professional',
+        phone=data.get('phone') or '',
+        organization=data.get('organization') or '',
+        is_active=True,
+    )
+    # senha já hasheada no payload
+    user.password = data.get('password')
+    user.save()
+
+    # set areas
+    area_ids = data.get('areas') or []
+    if area_ids:
+        areas_qs = AreaOfExpertise.objects.filter(pk__in=area_ids)
+        user.areas.set(areas_qs)
+
+    pending.delete()
+    messages.success(request, 'Sua conta foi ativada. Agora você pode fazer login.')
+    return redirect('medicoes:login')
 
 
 # ============================================================================

@@ -60,6 +60,13 @@ class CustomUser(AbstractUser):
         verbose_name='Tipo de Usuário',
         help_text='Categoria do usuário no sistema'
     )
+
+    email = models.EmailField(
+        unique=True,
+        max_length=254,
+        verbose_name='Email',
+        help_text='Endereço de email do usuário (único)'
+    )
     
     phone = models.CharField(
         max_length=20,
@@ -120,6 +127,21 @@ class CustomUser(AbstractUser):
     
     def is_viewer(self):
         return self.user_type == 'viewer'
+
+
+class PendingRegistration(models.Model):
+    """Armazena dados temporários de registro aguardando confirmação por email."""
+    email = models.EmailField(max_length=254, unique=True)
+    token = models.CharField(max_length=128, unique=True)
+    data = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Registro Pendente'
+        verbose_name_plural = 'Registros Pendentes'
+
+    def __str__(self):
+        return f"Pending registration for {self.email} ({self.pk})"
 
 
 # Validadores para MedicaoGravimetrica
@@ -194,10 +216,11 @@ class MedicaoGravimetrica(models.Model):
     
     # Dados da medição (mGal na Terra é ~980.000, logo precisa de 6 dígitos antes da vírgula)
     valor_gravidade = models.DecimalField(
-        max_digits=12, 
+        max_digits=12,
         decimal_places=5,
         verbose_name="Valor da Gravidade (mGal)",
-        help_text="Valor da gravidade em miligals"
+        help_text="Valor da gravidade em miligals",
+        validators=[validar_gravidade_range]
     )
     incerteza = models.DecimalField(
         max_digits=8,
