@@ -767,12 +767,19 @@ def normalizar_gravidade(valor):
 
     valor = Decimal(valor)
 
-    # Se valor estiver absurdamente alto, ajustar escala
-    if valor > 2000000:
-        valor = valor / Decimal("10")
+    # Alguns arquivos podem conter o valor em Gal (ex: 978.032) -> multiplicar por 1000
+    # ou em unidades exageradas (ex: 9.78032e+05 * 10) -> reduzir escala.
 
-    if valor > 2000000:
-        valor = valor / Decimal("10")
+    # Se o valor for pequeno (menor que ~2000), presumimos que está em Gal e multiplicamos por 1000
+    if valor > Decimal('0') and valor < Decimal('2000'):
+        valor = valor * Decimal('1000')
+
+    # Se o valor estiver absurdamente alto (ex: >2.000.000), reduzir escala dividindo por 10 até ficar no intervalo
+    # esperado (por segurança, fazemos no máximo 3 ajustes)
+    attempts = 0
+    while valor > Decimal('2000000') and attempts < 3:
+        valor = valor / Decimal('10')
+        attempts += 1
 
     return valor
 
