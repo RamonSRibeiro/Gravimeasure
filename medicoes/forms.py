@@ -1,7 +1,9 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.contrib.auth.forms import UserCreationForm
-from .models import MedicaoGravimetrica, CustomUser, validar_gravidade_range, AreaOfExpertise
+from django.contrib.auth.password_validation import validate_password
+from .models import MedicaoGravimetrica, CustomUser, validar_gravidade_range, AreaOfExpertise, PendingRegistration
+import re
 
 
 class SignUpForm(UserCreationForm):
@@ -109,9 +111,32 @@ class SignUpForm(UserCreationForm):
     
     def clean_email(self):
         email = self.cleaned_data.get('email')
-        if CustomUser.objects.filter(email=email).exists():
-            raise forms.ValidationError('Este email já está cadastrado no sistema.')
+        # Não revelar se email existe (proteção contra enumeração de usuários)
+        if CustomUser.objects.filter(email=email).exists() or PendingRegistration.objects.filter(email=email).exists():
+            raise forms.ValidationError('Este endereço de email não pode ser usado.')
         return email
+
+    def clean_password1(self):
+        """Validação adicional de senha forte."""
+        password = self.cleaned_data.get('password1')
+        if password:
+            try:
+                # Usar validadores padrão do Django
+                validate_password(password)
+            except ValidationError as e:
+                raise forms.ValidationError('; '.join(e.messages))
+            
+            # Validações adicionais customizadas
+            if not re.search(r'[A-Z]', password):
+                raise forms.ValidationError('Senha deve conter pelo menos uma letra MAIÚSCULA.')
+            if not re.search(r'[a-z]', password):
+                raise forms.ValidationError('Senha deve conter pelo menos uma letra minúscula.')
+            if not re.search(r'[0-9]', password):
+                raise forms.ValidationError('Senha deve conter pelo menos um número.')
+            if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+                raise forms.ValidationError('Senha deve conter pelo menos um caractere especial (!@#$%^&*...).')
+        
+        return password
 
     # Email will be confirmed via activation link sent by email
     
@@ -334,7 +359,57 @@ class MedicaoGravimetricaForm(forms.ModelForm):
             raise forms.ValidationError(e.messages)
         return valor
 
+    def _validate_image_file(self, file_obj, field_name='Arquivo'):
+        """Validar arquivo de imagem (tipo MIME, extensão, tamanho)."""
+        if not file_obj:
+            return
+        
+        # Extensões permitidas
+        ALLOWED_EXTENSIONS = ('jpg', 'jpeg', 'png', 'gif')
+        ext = file_obj.name.rsplit('.', 1)[-1].lower() if '.' in file_obj.name else ''
+        if ext not in ALLOWED_EXTENSIONS:
+            raise ValidationError(f'{field_name}: Tipo não permitido. Use: {", ".join(ALLOWED_EXTENSIONS)}')
+        
+        # Tamanho máximo: 5MB
+        MAX_SIZE = 5 * 1024 * 1024
+        if file_obj.size > MAX_SIZE:
+            size_mb = file_obj.size / (1024 * 1024)
+            raise ValidationError(f'{field_name}: Muito grande. Máximo: 5MB. Atual: {size_mb:.2f}MB')
+
+    def clean_foto_estacao(self):
+        foto = self.cleaned_data.get('foto_estacao')
+        try:
+            self._validate_image_file(foto, 'Foto da Estação')
+        except ValidationError as e:
+            raise forms.ValidationError(e.message if hasattr(e, 'message') else str(e))
+        return foto
+
+    def clean_croqui(self):
+        croqui = self.cleaned_data.get('croqui')
+        try:
+            self._validate_image_file(croqui, 'Croqui')
+        except ValidationError as e:
+            raise forms.ValidationError(e.message if hasattr(e, 'message') else str(e))
+        return croqui
+
 
 class UploadExcelForm(forms.Form):
     arquivo = forms.FileField(label="Arquivo Excel (.xlsx)")
+    
+    def clean_arquivo(self):
+        arquivo = self.cleaned_data.get('arquivo')
+        if not arquivo:
+            raise forms.ValidationError('Selecione um arquivo Excel.')
+        
+        # Validar extensão
+        if not arquivo.name.lower().endswith('.xlsx'):
+            raise forms.ValidationError('Apenas arquivos .xlsx são permitidos.')
+        
+        # Validar tamanho máximo (10MB para Excel)
+        MAX_SIZE = 10 * 1024 * 1024
+        if arquivo.size > MAX_SIZE:
+            size_mb = arquivo.size / (1024 * 1024)
+            raise forms.ValidationError(f'Arquivo muito grande. Máximo: 10MB. Atual: {size_mb:.2f}MB')
+        
+        return arquivo
 

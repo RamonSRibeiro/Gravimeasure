@@ -44,6 +44,26 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# Security Headers
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_SECURITY_POLICY = {
+    'default-src': ("'self'",),
+    'script-src': ("'self'", "'unsafe-inline'"),  # Relaxado para Bootstrap; melhorar em produção
+    'style-src': ("'self'", "'unsafe-inline'"),   # Relaxado para CSS; melhorar em produção
+    'img-src': ("'self'", 'data:', 'https:'),
+    'font-src': ("'self'", 'data:'),
+    'connect-src': ("'self'",),
+    'frame-ancestors': ("'none'",),
+}
+X_FRAME_OPTIONS = 'DENY'
+SECURE_SSL_REDIRECT = False  # Ativar em produção com HTTPS
+SESSION_COOKIE_SECURE = False  # Ativar em produção
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Strict'
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Strict'
+CSRF_COOKIE_SECURE = False  # Ativar em produção
+
 ROOT_URLCONF = 'gravimeasure.urls'
 
 TEMPLATES = [

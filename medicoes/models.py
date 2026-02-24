@@ -144,11 +144,40 @@ class PendingRegistration(models.Model):
         return f"Pending registration for {self.email} ({self.pk})"
 
 
+class LoginAttempt(models.Model):
+    """Rastreia tentativas de login para implementar bloqueio por força bruta."""
+    identifier = models.CharField(max_length=254)  # email ou username
+    failed_attempts = models.IntegerField(default=0)
+    last_attempt = models.DateTimeField(auto_now=True)
+    blocked_until = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Tentativa de Login'
+        verbose_name_plural = 'Tentativas de Login'
+        indexes = [
+            models.Index(fields=['identifier']),
+        ]
+
+    def __str__(self):
+        return f"LoginAttempt for {self.identifier}"
+
+
 # Validadores para MedicaoGravimetrica
 def validar_imagem_tamanho(file):
-    """Validador para tamanho máximo de arquivo (5MB)"""
+    """Validador para tamanho máximo de arquivo (5MB) e tipo MIME."""
     if file.size > 5 * 1024 * 1024:  # 5MB
         raise ValidationError('Arquivo deve ter no máximo 5MB.')
+    
+    # Validar MIME type se disponível
+    ALLOWED_MIMES = ('image/jpeg', 'image/png', 'image/gif')
+    if hasattr(file, 'content_type'):
+        if file.content_type not in ALLOWED_MIMES:
+            raise ValidationError(f'Tipo de arquivo inválido. Permitidos: JPEG, PNG, GIF.')
+    # Também validar extensão no nome
+    elif hasattr(file, 'name'):
+        allowed_exts = ('.jpg', '.jpeg', '.png', '.gif')
+        if not any(file.name.lower().endswith(ext) for ext in allowed_exts):
+            raise ValidationError('Extensão inválida. Use: .jpg, .jpeg, .png, .gif')
 
 
 def validar_coordenadas_brasil(latitude, longitude):

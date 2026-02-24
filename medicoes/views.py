@@ -25,7 +25,7 @@ import secrets
 from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth.hashers import make_password
-from .models import PendingRegistration, AreaOfExpertise
+from .models import PendingRegistration, AreaOfExpertise, LoginAttempt
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +102,7 @@ def signup_view(request):
 
 @require_http_methods(["GET", "POST"])
 def login_view(request):
-    """Página de login de usuário"""
+    """Página de login com proteção contra força bruta"""
     if request.user.is_authenticated:
         return redirect('medicoes:home')
     
@@ -112,10 +112,22 @@ def login_view(request):
             username_or_email = form.cleaned_data.get('username')
             password = form.cleaned_data.get('password')
             
-            # Tenta primeiro com username
+            # Verificar bloqueio por tentativas falhadas
+            attempt_record, _ = LoginAttempt.objects.get_or_create(identifier=username_or_email)
+            if attempt_record.blocked_until and timezone.now() < attempt_record.blocked_until:
+                messages.error(request, 'Conta temporariamente bloqueada por excesso de tentativas. Tente novamente mais tarde.')
+                return render(request, 'medicoes/login.html', {'form': form})
+            
+            # Limpar bloqueio se expiraram os 15 minutos
+            if attempt_record.blocked_until and timezone.now() >= attempt_record.blocked_until:
+                attempt_record.failed_attempts = 0
+                attempt_record.blocked_until = None
+                attempt_record.save()
+            
+            # Tenta autenticar com username
             user = authenticate(username=username_or_email, password=password)
             
-            # Se não funcionar, tenta com email
+            # Se não funcionar, tenta com email (proteção: não revelar se email/user existe)
             if user is None and '@' in username_or_email:
                 try:
                     user_obj = CustomUser.objects.get(email=username_or_email)
@@ -124,11 +136,24 @@ def login_view(request):
                     pass
             
             if user is not None:
+                # Login bem-sucedido: resetar tentativas
+                attempt_record.failed_attempts = 0
+                attempt_record.blocked_until = None
+                attempt_record.save()
                 login(request, user)
                 messages.success(request, f'Bem-vindo de volta, {user.first_name or user.username}!')
                 return redirect('medicoes:home')
             else:
-                messages.error(request, 'Email/Usuário ou senha incorretos.')
+                # Login falhado: incrementar contador
+                attempt_record.failed_attempts += 1
+                if attempt_record.failed_attempts >= 5:
+                    # Bloquear por 15 minutos após 5 tentativas falhadas
+                    attempt_record.blocked_until = timezone.now() + timedelta(minutes=15)
+                    messages.error(request, 'Muitas tentativas falhadas. Sua conta foi temporariamente bloqueada por 15 minutos.')
+                else:
+                    remaining = 5 - attempt_record.failed_attempts
+                    messages.error(request, f'Email/Usuário ou senha incorretos. ({remaining} tentativas restantes)')
+                attempt_record.save()
     else:
         form = LoginForm()
     
