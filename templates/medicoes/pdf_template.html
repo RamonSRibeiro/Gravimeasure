@@ -64,7 +64,17 @@
                 <td>{{ medicao.valor_gravidade }} mGal</td>
             </tr>
                 <tr>
-                    <td>Anomalia Free-Air</td>
+                    <tr>
+                <td>Aceleração da Gravidade (SI)</td>
+                <td>
+                    {% if medicao.gravidade_m_s2 %}
+                        {{ medicao.gravidade_m_s2|floatformat:6 }} m/s²
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+            </tr>
+                    <td>Anomalia da Gravidade de Ar Livre</td>
                     <td>{% with fa=medicao.calcular_anomalia_ar_livre %}{% if fa %}{{ fa }} mGal{% else %}N/A{% endif %}{% endwith %}</td>
                 </tr>
                 <tr>

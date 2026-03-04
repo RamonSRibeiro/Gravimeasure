@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from decimal import Decimal, ROUND_HALF_UP
 import math
 from datetime import datetime
+from decimal import Decimal
 
 # Opções de ícone para marcadores no mapa
 MARKER_ICON_CHOICES = (
@@ -416,3 +417,11 @@ class MedicaoGravimetrica(models.Model):
 
     def __str__(self):
         return f"{self.codigo_estacao} - {self.nome_estacao} ({self.data_medicao})"
+    
+    
+    @property
+    def gravidade_m_s2(self):
+        """Converte o valor da gravidade de mGal para m/s²"""
+        if self.valor_gravidade is not None:
+            return float(self.valor_gravidade) * 0.00001
+        return None

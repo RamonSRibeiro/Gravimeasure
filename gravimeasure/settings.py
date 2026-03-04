@@ -31,7 +31,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'medicoes',  # App para medições gravimétricas
+    'medicoes', 
 ]
 
 MIDDLEWARE = [
@@ -158,3 +158,16 @@ AUTH_USER_MODEL = 'medicoes.CustomUser'
 LOGIN_URL = 'medicoes:login'
 LOGIN_REDIRECT_URL = 'medicoes:home'
 LOGOUT_REDIRECT_URL = 'medicoes:login'
+
+# Email Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@gravimeasure.com')
+
+# Se quiser manter o console apenas se NÃO houver credenciais:
+if DEBUG and not EMAIL_HOST_USER:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

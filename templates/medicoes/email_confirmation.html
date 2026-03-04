@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Email de Confirmação Enviado{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 50px auto; padding: 20px;">
+    <div style="background-color: #f0fdf4; padding: 40px; border-radius: 8px; border: 2px solid #22c55e; text-align: center;">
+        <h1 style="color: #16a34a; margin-top: 0; font-size: 32px;">✓ Email Enviado com Sucesso!</h1>
+        
+        <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 20px 0;">
+            Um email de confirmação foi enviado para:<br>
+            <strong style="color: #1e40af; font-size: 18px;">{{ email }}</strong>
+        </p>
+        
+        <div style="background-color: white; padding: 20px; border-radius: 4px; margin: 20px 0; text-align: left;">
+            <h3 style="color: #333; margin-top: 0;">O que fazer agora?</h3>
+            <ol style="color: #555; line-height: 2;">
+                <li><strong>Verifique seu email</strong> (incluindo a pasta de spam)</li>
+                <li><strong>Clique no link</strong> de ativação no email</li>
+                <li><strong>Sua conta será ativada</strong> automaticamente</li>
+                <li><strong>Faça login</strong> com seu email e senha</li>
+            </ol>
+        </div>
+        
+        <div style="background-color: #fef3c7; border: 1px solid #fcd34d; padding: 15px; border-radius: 4px; margin: 20px 0; color: #92400e;">
+            <strong>⏱️ Atenção:</strong> O link expira em <strong>7 dias</strong>. Se não ativar sua conta neste período, será necessário registrar-se novamente.
+        </div>
+        
+        <div style="background-color: #dbeafe; border: 1px solid #bfdbfe; padding: 15px; border-radius: 4px; margin: 20px 0; color: #0c4a6e;">
+            <strong>Não recebeu o email?</strong><br>
+            Verifique se entrou no direito. Se o email estiver correto, clique no botão abaixo para reenviar.
+        </div>
+        
+        <form method="post" style="margin: 20px 0;">
+            {% csrf_token %}
+            <button type="submit" name="action" value="resend" 
+                    style="padding: 12px 30px; background-color: #3b82f6; color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; cursor: pointer;">
+                📧 Reenviar Email
+            </button>
+        </form>
+        
+        <p style="color: #666; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+            <a href="{% url 'medicoes:login' %}" style="color: #3b82f6; text-decoration: none; font-weight: bold;">← Voltar para Login</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

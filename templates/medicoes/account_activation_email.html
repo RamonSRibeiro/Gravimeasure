@@ -1,10 +1,61 @@
-Olá {{ user.first_name|default:user.username }},
-
-Por favor ative sua conta clicando no link abaixo:
-
-{{ activation_link }}
-
-Se você não criou essa conta, ignore este email.
-
-Saudações,
-Equipe Gravimeasure
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background-color: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 40px 20px; text-align: center; }
+        .header h1 { margin: 0; font-size: 28px; }
+        .content { padding: 40px 20px; }
+        .content p { color: #333; line-height: 1.6; margin: 15px 0; }
+        .cta-button { display: inline-block; background-color: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 4px; font-weight: bold; margin-top: 20px; margin-bottom: 20px; }
+        .cta-button:hover { background-color: #1e3a8a; }
+        .info-box { background-color: #f0f9ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .footer { background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb; color: #666; font-size: 12px; }
+        .expiry-warning { background-color: #fef3c7; border: 1px solid #fcd34d; padding: 10px; border-radius: 4px; margin: 10px 0; color: #92400e; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✓ Bem-vindo ao Gravimeasure!</h1>
+        </div>
+        
+        <div class="content">
+            <p>Olá <strong>{{ user.first_name|default:"Usuário" }}</strong>,</p>
+            
+            <p>Obrigado por se registrar no <strong>Banco de Dados Gravimétrico</strong>. Para ativar sua conta e começar a usar o sistema, clique no botão abaixo:</p>
+            
+            <center>
+                <a href="{{ activation_link }}" class="cta-button">Ativar Minha Conta</a>
+            </center>
+            
+            <p style="text-align: center; color: #666; font-size: 12px;">Ou copie e cole este link no seu navegador:<br><code style="background: #f0f0f0; padding: 5px; border-radius: 3px;">{{ activation_link }}</code></p>
+            
+            <div class="info-box">
+                <strong>⏱️ Importante:</strong> Este link expira em <strong>7 dias</strong>. Se não ativar sua conta neste período, será necessário registrar-se novamente.
+            </div>
+            
+            <p>Após ativar sua conta, você poderá:</p>
+            <ul>
+                <li>Inserir e gerenciar medições gravimétricas</li>
+                <li>Visualizar dados de outras estações</li>
+                <li>Acessar análises e relatórios</li>
+                <li>Gerenciar seu perfil e áreas de atuação</li>
+            </ul>
+            
+            <p style="margin-top: 30px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                <strong>Não criou esta conta?</strong><br>
+                Se você recebeu este email por engano, ignore esta mensagem ou entre em contato com nosso suporte.
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>© 2026 Banco de Dados Gravimétrico - Todos os direitos reservados.<br>
+            Esta é uma mensagem automática, por favor não responda este email.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -251,7 +251,7 @@
                         <td>{{ medicao.data_medicao|date:"d/m/Y" }}</td>
 
                         <td style="text-align: center; font-size: 1.1rem;">
-                            <a href="{% url 'medicoes:medicao_pdf' medicao.pk %}" title="PDF">📄</a>
+                            <a href="{% url 'medicoes:medicao_pdf' medicao.pk %}" target="_blank" title="PDF">📄</a>
 
                             {% if user.is_operator or user.is_admin %}
                             <a href="{% url 'medicoes:medicao_editar' medicao.pk %}" title="Editar">✏️</a>

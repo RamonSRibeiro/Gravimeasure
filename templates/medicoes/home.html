@@ -29,7 +29,8 @@
         <ul class="download-list">
             {% for medicao in medicoes %}
             <li class="download-item" data-medicao-id="{{ medicao.id }}" data-latitude="{{ medicao.latitude }}" data-longitude="{{ medicao.longitude }}" style="cursor: pointer;">
-                <a href="{% url 'medicoes:medicao_detail' medicao.codigo_estacao %}" class="download-link">
+                
+                <a href="{% url 'medicoes:medicao_detail' medicao.codigo_estacao %}" target="_blank" class="download-link">
                     <span class="pdf-icon">📄</span>
                     <div>
                         <strong>{{ medicao.nome_estacao }}</strong><br>
@@ -37,8 +38,14 @@
                         <span style="font-size: 0.75rem; color: #999;">{{ medicao.data_medicao|date:"d/m/Y" }}</span>
                     </div>
                 </a>
+                
                 <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-gray);">
-                    <a href="{% url 'medicoes:medicao_pdf' medicao.pk %}" style="display: inline-block; padding: 4px 8px; background: var(--success-green); color: white; text-decoration: none; border-radius: 3px; font-size: 0.75rem; font-weight: 700;">📥 PDF</a>
+                   <a href="{% url 'medicoes:medicao_pdf' medicao.pk %}" 
+                        target="_blank" 
+                        onclick="event.stopPropagation();"
+                        style="display: inline-block; padding: 4px 8px; background: var(--success-green); color: white; text-decoration: none; border-radius: 3px; font-size: 0.75rem; font-weight: 700;">
+                        📥 PDF
+                    </a>
                 </div>
             </li>
             {% endfor %}

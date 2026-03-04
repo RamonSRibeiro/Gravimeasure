@@ -71,14 +71,14 @@ def signup_view(request):
             activation_link = request.build_absolute_uri(
                 reverse_lazy('medicoes:activate', kwargs={'uidb64': uid, 'token': token})
             )
-            subject = 'Ative sua conta'
+            subject = 'Ative sua conta - Gravimeasure'
             message = render_to_string('medicoes/account_activation_email.html', {
                 'user': {'first_name': payload.get('first_name'), 'username': email.split('@')[0]},
                 'activation_link': activation_link,
             })
             try:
-                send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False)
-            except Exception:
+                send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False, html_message=message)
+            except Exception as e:
                 # remove pending registration if email could not be sent
                 try:
                     pending.delete()
@@ -86,10 +86,10 @@ def signup_view(request):
                     logger.exception('Falha ao remover PendingRegistration após erro de envio de email')
                 # attach non-field error to form and re-render signup page so user can try another email
                 form.add_error(None, 'Falha ao enviar email de ativação. Por favor verifique o endereço de email e tente novamente.')
+                logger.exception(f'Erro ao enviar email de ativação para {email}: {str(e)}')
                 return render(request, 'medicoes/signup.html', {'form': form})
 
-            messages.success(request, 'Conta criada. Verifique seu email para ativar a conta.')
-            return redirect('medicoes:login')
+            return redirect(f'{reverse_lazy("medicoes:email_confirmation")}?email={email}')
         else:
             for field, errors in form.errors.items():
                 for error in errors:
@@ -248,6 +248,50 @@ def activate_account(request, uidb64, token):
     pending.delete()
     messages.success(request, 'Sua conta foi ativada. Agora você pode fazer login.')
     return redirect('medicoes:login')
+
+
+@require_http_methods(["GET", "POST"])
+def email_confirmation_view(request):
+    """Página mostrando que email de confirmação foi enviado"""
+    email = request.GET.get('email', '')
+    
+    if request.method == 'POST' and request.POST.get('action') == 'resend':
+        # Reenviar email
+        if not email:
+            messages.error(request, 'Email não fornecido.')
+            return redirect('medicoes:signup')
+        
+        try:
+            pending = PendingRegistration.objects.get(email=email)
+        except PendingRegistration.DoesNotExist:
+            messages.error(request, 'Registro não encontrado. Por favor registre-se novamente.')
+            return redirect('medicoes:signup')
+        
+        # Reenviar email
+        data = pending.data
+        uid = urlsafe_base64_encode(force_bytes(pending.pk))
+        activation_link = request.build_absolute_uri(
+            reverse_lazy('medicoes:activate', kwargs={'uidb64': uid, 'token': pending.token})
+        )
+        subject = 'Ative sua conta - Gravimeasure'
+        message = render_to_string('medicoes/account_activation_email.html', {
+            'user': {'first_name': data.get('first_name'), 'username': email.split('@')[0]},
+            'activation_link': activation_link,
+        })
+        try:
+            send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False, html_message=message)
+            messages.success(request, 'Email reenviado com sucesso! Verifique sua caixa de entrada.')
+        except Exception as e:
+            messages.error(request, 'Erro ao reenviar email. Tente novamente mais tarde.')
+            logger.exception(f'Erro ao reenviar email para {email}: {str(e)}')
+        
+        return render(request, 'medicoes/email_confirmation.html', {'email': email})
+    
+    if not email:
+        messages.error(request, 'Email não fornecido.')
+        return redirect('medicoes:signup')
+    
+    return render(request, 'medicoes/email_confirmation.html', {'email': email})
 
 
 # ============================================================================
@@ -599,9 +643,8 @@ def gerar_pdf_medicao(request, pk):
             )
     
     filename = f"medicao_{medicao.codigo_estacao}_{medicao.data_medicao}.pdf"
-    
     response = HttpResponse(pdf_file, content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
     return response
 
 
