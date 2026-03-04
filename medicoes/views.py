@@ -26,10 +26,78 @@ from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth.hashers import make_password
 from .models import PendingRegistration, AreaOfExpertise, LoginAttempt
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.interpolate import griddata
+import base64
+
+
 
 logger = logging.getLogger(__name__)
 
+def gerar_mapa_contorno_medicao(medicao_foco):
+    """
+    Gera um mapa de isolinhas da Anomalia de Bouguer destacando a estação atual.
+    """
+    # 1. Busca todas as medições ativas para criar o contexto do mapa
+    qs = MedicaoGravimetrica.objects.filter(ativo=True).exclude(anomalia_bouguer__isnull=True)
+    
+    if qs.count() < 4:  # Mínimo para uma interpolação cúbica decente
+        return None
 
+    # Extração de dados (convertendo Decimal para float para o numpy/scipy)
+    longs = np.array([float(m.longitude) for m in qs])
+    lats = np.array([float(m.latitude) for m in qs])
+    vals = np.array([float(m.anomalia_bouguer) for m in qs])
+
+    # 2. Definição da grade (Grid)
+    margin = 0.01  # Pequena margem ao redor dos pontos
+    xi = np.linspace(longs.min() - margin, longs.max() + margin, 150)
+    yi = np.linspace(lats.min() - margin, lats.max() + margin, 150)
+    X, Y = np.meshgrid(xi, yi)
+
+    # 3. Interpolação Geofísica
+    try:
+        # Método 'cubic' para curvas suaves, com fallback 'linear' para bordas (NaNs)
+        Z = griddata((longs, lats), vals, (X, Y), method='cubic')
+        Z_linear = griddata((longs, lats), vals, (X, Y), method='linear')
+        Z[np.isnan(Z)] = Z_linear[np.isnan(Z)]
+    except Exception as e:
+        logger.error(f"Erro na interpolação do mapa: {e}")
+        return None
+
+    # 4. Construção do Gráfico com Matplotlib
+    fig, ax = plt.subplots(figsize=(7, 6))
+    
+    # Mapa de cores (Contorno preenchido)
+    cntr = ax.contourf(X, Y, Z, levels=14, cmap="RdYlBu_r") # Azul para negativo, Vermelho para positivo
+    fig.colorbar(cntr, ax=ax, label='Anomalia de Bouguer (mGal)')
+    
+    # Isolinhas pretas finas
+    lines = ax.contour(X, Y, Z, levels=14, colors='black', linewidths=0.4, alpha=0.7)
+    ax.clabel(lines, inline=True, fontsize=8, fmt='%.1f')
+
+    # Plotar todos os pontos das estações como referência
+    ax.scatter(longs, lats, c='black', s=5, alpha=0.3, label='Outras Estações')
+    
+    # DESTAQUE: A estação que é o foco deste PDF
+    ax.scatter(float(medicao_foco.longitude), float(medicao_foco.latitude), 
+               c='yellow', s=120, marker='*', edgecolors='black', 
+               label=f'Estação {medicao_foco.codigo_estacao}', zorder=5)
+
+    ax.set_title(f"Mapa de Contorno de Anomalia de Bouguer", pad=15)
+    ax.set_xlabel("Longitude")
+    ax.set_ylabel("Latitude")
+    ax.set_aspect('equal') # Mantém a proporção geográfica correta
+    ax.legend(loc='lower right', fontsize='small')
+
+    # 5. Transformar em Base64 para o PDF
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png', dpi=150, bbox_inches='tight')
+    plt.close(fig)
+    
+    img_b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+    return f"data:image/png;base64,{img_b64}"
 # ============================================================================
 # AUTHENTICATION VIEWS - Sign Up, Login, Logout, Profile
 # ============================================================================
@@ -449,6 +517,7 @@ def gerar_pdf_medicao(request, pk):
         return redirect('medicoes:login')
     
     medicao = get_object_or_404(MedicaoGravimetrica, pk=pk)
+    mapa_contorno = gerar_mapa_contorno_medicao(medicao)
     
     # Preparar caminhos de arquivo absoluto para WeasyPrint carregar imagens diretamente
     import os
@@ -562,6 +631,7 @@ def gerar_pdf_medicao(request, pk):
         'foto_data': foto_data if 'foto_data' in locals() else None,
         'croqui_data': croqui_data if 'croqui_data' in locals() else None,
         'logo_data': logo_data if 'logo_data' in locals() else None,
+        'mapa_contorno': mapa_contorno,
     }
 
     # Re-render HTML with data URIs

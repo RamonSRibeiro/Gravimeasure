@@ -404,10 +404,6 @@ class MedicaoGravimetrica(models.Model):
         return anomalia_free_air.quantize(Decimal('0.00001'), rounding=ROUND_HALF_UP)
 
     def calcular_gradiente_vertical(self):
-        """Retorna um valor aproximado do gradiente vertical (mGal/m).
-        Utiliza valor padrão internacional aproximado de -0.3086 mGal/m para variação com altura.
-        """
-        # Valor padrão aproximado do gradiente vertical da gravidade (mGal/m)
         return Decimal('-0.3086')
 
     def save(self, *args, **kwargs):
@@ -418,10 +414,8 @@ class MedicaoGravimetrica(models.Model):
     def __str__(self):
         return f"{self.codigo_estacao} - {self.nome_estacao} ({self.data_medicao})"
     
-    
     @property
     def gravidade_m_s2(self):
-        """Converte o valor da gravidade de mGal para m/s²"""
         if self.valor_gravidade is not None:
             return float(self.valor_gravidade) * 0.00001
         return None
