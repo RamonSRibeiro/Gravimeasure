@@ -30,76 +30,123 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 import base64
-
+from scipy.spatial import cKDTree, ConvexHull
+from matplotlib.path import Path
+import matplotlib
+matplotlib.use('Agg')
+from scipy.interpolate import RBFInterpolator
 
 
 logger = logging.getLogger(__name__)
 
+
 def gerar_mapa_contorno_medicao(medicao_foco):
-    """
-    Gera um mapa de isolinhas da Anomalia de Bouguer destacando a estação atual.
-    """
-    # 1. Busca todas as medições ativas para criar o contexto do mapa
-    qs = MedicaoGravimetrica.objects.filter(ativo=True).exclude(anomalia_bouguer__isnull=True)
+    # Filtro de dados brutos
+    qs = MedicaoGravimetrica.objects.filter(
+        ativo=True,
+        anomalia_bouguer__gte=-500,
+        anomalia_bouguer__lte=500
+    ).exclude(anomalia_bouguer__isnull=True)
     
-    if qs.count() < 4:  # Mínimo para uma interpolação cúbica decente
+    if qs.count() < 4:
         return None
 
-    # Extração de dados (convertendo Decimal para float para o numpy/scipy)
     longs = np.array([float(m.longitude) for m in qs])
     lats = np.array([float(m.latitude) for m in qs])
     vals = np.array([float(m.anomalia_bouguer) for m in qs])
 
-    # 2. Definição da grade (Grid)
-    margin = 0.01  # Pequena margem ao redor dos pontos
-    xi = np.linspace(longs.min() - margin, longs.max() + margin, 150)
-    yi = np.linspace(lats.min() - margin, lats.max() + margin, 150)
+    f_long, f_lat = float(medicao_foco.longitude), float(medicao_foco.latitude)
+
+    # Ajuste de Zoom
+    std_long, std_lat = np.std(longs), np.std(lats)
+    z_factor = 0.8 
+    xlims = (f_long - (std_long * z_factor), f_long + (std_long * z_factor))
+    ylims = (f_lat - (std_lat * z_factor), f_lat + (std_lat * z_factor))
+
+    
+    xi = np.linspace(longs.min() - 0.1, longs.max() + 0.1, 300)
+    yi = np.linspace(lats.min() - 0.1, lats.max() + 0.1, 300)
     X, Y = np.meshgrid(xi, yi)
 
-    # 3. Interpolação Geofísica
     try:
-        # Método 'cubic' para curvas suaves, com fallback 'linear' para bordas (NaNs)
-        Z = griddata((longs, lats), vals, (X, Y), method='cubic')
-        Z_linear = griddata((longs, lats), vals, (X, Y), method='linear')
-        Z[np.isnan(Z)] = Z_linear[np.isnan(Z)]
+        obs_coords = np.column_stack((longs, lats))
+        grid_coords = np.column_stack((X.ravel(), Y.ravel()))
+        
+        interpolador = RBFInterpolator(
+            obs_coords, 
+            vals, 
+            kernel='thin_plate_spline', 
+            smoothing=0.1
+        )
+        Z_flat = interpolador(grid_coords)
+        Z = Z_flat.reshape(X.shape)
+        
     except Exception as e:
-        logger.error(f"Erro na interpolação do mapa: {e}")
-        return None
+        # Fallback de segurança: Se a matemática do RBF falhar por qualquer motivo na view,
+        from scipy.interpolate import griddata
+        Z = griddata((longs, lats), vals, (X, Y), method='linear')
 
-    # 4. Construção do Gráfico com Matplotlib
-    fig, ax = plt.subplots(figsize=(7, 6))
+    # MÁSCARA CONVEX HULL: Fundamental para evitar que o RBF extrapole dados para fora da área mapeada
+    pts = np.column_stack((longs, lats))
+    hull = ConvexHull(pts)
+    hull_path = Path(pts[hull.vertices])
+    mask = hull_path.contains_points(np.column_stack((X.flatten(), Y.flatten()))).reshape(X.shape)
+    Z[~mask] = np.nan
+
+    # Normalização de cores focada na área visível
+    v_mask = (X >= xlims[0]) & (X <= xlims[1]) & (Y >= ylims[0]) & (Y <= ylims[1]) & (~np.isnan(Z))
+    z_vis = Z[v_mask]
     
-    # Mapa de cores (Contorno preenchido)
-    cntr = ax.contourf(X, Y, Z, levels=14, cmap="RdYlBu_r") # Azul para negativo, Vermelho para positivo
-    fig.colorbar(cntr, ax=ax, label='Anomalia de Bouguer (mGal)')
+    if z_vis.size > 0 and not np.all(np.isnan(z_vis)):
+        # Percentis ajudam a ignorar pequenos bicos matemáticos e focam na cor real
+        z_min = np.nanpercentile(z_vis, 2)
+        z_max = np.nanpercentile(z_vis, 98)
+        
+        if z_min == z_max:
+            levels = 50
+            isoline_levels = 10
+        else:
+            levels = np.linspace(z_min, z_max, 50)
+            isoline_levels = np.linspace(z_min, z_max, 12) 
+    else:
+        levels = 50
+        isoline_levels = 10
+
+    fig, ax = plt.subplots(figsize=(8, 7), dpi=200)
     
-    # Isolinhas pretas finas
-    lines = ax.contour(X, Y, Z, levels=14, colors='black', linewidths=0.4, alpha=0.7)
-    ax.clabel(lines, inline=True, fontsize=8, fmt='%.1f')
+    if isinstance(levels, np.ndarray):
+        # Fundo colorido
+        cntr = ax.contourf(X, Y, Z, levels=levels, cmap="turbo", extend='both', vmin=z_min, vmax=z_max)
+        fig.colorbar(cntr, ax=ax, label='Anomalia Observada (mGal)')
+        
+        # Isolinhas limpas e legíveis
+        lines = ax.contour(X, Y, Z, levels=isoline_levels, colors='black', linewidths=0.5, alpha=0.6, vmin=z_min, vmax=z_max)
+        ax.clabel(lines, inline=True, fontsize=7, fmt='%.1f')
 
-    # Plotar todos os pontos das estações como referência
-    ax.scatter(longs, lats, c='black', s=5, alpha=0.3, label='Outras Estações')
+    # Marcadores
+    ax.scatter(longs, lats, c='black', s=10, alpha=0.3, zorder=3)
+    ax.scatter(f_long, f_lat, c='gold', s=350, marker='*', edgecolors='black', linewidths=1.2, zorder=10)
+
+    ax.set_xlim(xlims)
+    ax.set_ylim(ylims)
+    ax.set_aspect('equal')
     
-    # DESTAQUE: A estação que é o foco deste PDF
-    ax.scatter(float(medicao_foco.longitude), float(medicao_foco.latitude), 
-               c='yellow', s=120, marker='*', edgecolors='black', 
-               label=f'Estação {medicao_foco.codigo_estacao}', zorder=5)
+    ax.set_xlabel('Longitude (°W)')
+    ax.set_ylabel('Latitude (°S)')
+    
+    codigo = getattr(medicao_foco, 'codigo_estacao', 'Desconhecida')
+    ax.set_title(f"Mapa Bouguer: Estação {codigo}", pad=20)
+    ax.grid(True, linestyle='--', alpha=0.1)
 
-    ax.set_title(f"Mapa de Contorno de Anomalia de Bouguer", pad=15)
-    ax.set_xlabel("Longitude")
-    ax.set_ylabel("Latitude")
-    ax.set_aspect('equal') # Mantém a proporção geográfica correta
-    ax.legend(loc='lower right', fontsize='small')
-
-    # 5. Transformar em Base64 para o PDF
     buf = io.BytesIO()
-    plt.savefig(buf, format='png', dpi=150, bbox_inches='tight')
+    plt.savefig(buf, format='png', dpi=200, bbox_inches='tight')
     plt.close(fig)
     
-    img_b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
-    return f"data:image/png;base64,{img_b64}"
+    return f"data:image/png;base64,{base64.b64encode(buf.getvalue()).decode('utf-8')}"
+
+
 # ============================================================================
-# AUTHENTICATION VIEWS - Sign Up, Login, Logout, Profile
+# AUTENTICAÇÂO VIEWS - Sign Up, Login, Logout, Profile
 # ============================================================================
 
 @require_http_methods(["GET", "POST"])

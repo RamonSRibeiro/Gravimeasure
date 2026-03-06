@@ -30,7 +30,7 @@
             {% for medicao in medicoes %}
             <li class="download-item" data-medicao-id="{{ medicao.id }}" data-latitude="{{ medicao.latitude }}" data-longitude="{{ medicao.longitude }}" style="cursor: pointer;">
                 
-                <a href="{% url 'medicoes:medicao_detail' medicao.codigo_estacao %}" target="_blank" class="download-link">
+                <a href="{% url 'medicoes:medicao_detail' medicao.codigo_estacao %}"  class="download-link">
                     <span class="pdf-icon">📄</span>
                     <div>
                         <strong>{{ medicao.nome_estacao }}</strong><br>
@@ -225,7 +225,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         <div style="margin-top: 10px; display: flex; gap: 5px;">
                             <a href="/medicao/${medicao.codigo_estacao}/" style="flex: 1; padding: 5px; background: var(--primary-blue); color: white; text-decoration: none; border-radius: 3px; font-size: 0.75rem; text-align: center; font-weight: 700;">📄 Detalhes</a>
-                            <a href="${medicao.url_pdf}" style="flex: 1; padding: 5px; background: #d32f2f; color: white; text-decoration: none; border-radius: 3px; font-size: 0.75rem; text-align: center; font-weight: 700;">📥 PDF</a>
+                            <a href="${medicao.url_pdf}" target="_blank" style="flex: 1; padding: 5px; background: #d32f2f; color: white; text-decoration: none; border-radius: 3px; font-size: 0.75rem; text-align: center; font-weight: 700;">📥 PDF</a>
                         </div>
                     `;
                     
