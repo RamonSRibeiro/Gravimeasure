@@ -201,4 +201,4 @@ Sinta-se à vontade para contribuir com:
 
 ---
 
-**Última atualização**: 23 de fevereiro de 2026
+**Última atualização**: 06 de março de 2026
