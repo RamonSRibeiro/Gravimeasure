@@ -28,7 +28,7 @@ Este projeto é uma aplicação web desenvolvida em Django para gestão de medi�
 ### 1. Clone o repositório
 ```bash
 git clone <URL_DO_REPOSITORIO>
-cd BDG
+cd Gravimeasure
 ```
 
 ### 2. Crie e ative um ambiente virtual
