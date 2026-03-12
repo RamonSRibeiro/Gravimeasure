@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}{% if object %}Editar{% else %}Adicionar{% endif %} Medição - {{ block.super }}{% endblock %}
+{% block title %}{% if object %}Editar{% else %}Adicionar{% endif %} Relatório - {{ block.super }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -30,7 +30,7 @@
 <div style="max-width: 900px; margin: 0 auto; padding: 0 20px;">
     <div style="background: white; padding: 30px; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
         <h1 style="color: var(--primary-blue); margin-top: 0;">
-            {% if object %}✏️ Editar Medição Gravimétrica{% else %}➕ Adicionar Nova Medição Gravimétrica{% endif %}
+            {% if object %}✏️ Editar Relatório Gravimétrico{% else %}➕ Adicionar Novo Relatório Gravimétrico{% endif %}
         </h1>
         
         <form method="post" enctype="multipart/form-data" style="margin-top: 20px;">
@@ -97,7 +97,7 @@
             
             <div style="margin-bottom: 20px;">
                 <h3 style="color: var(--primary-blue); border-bottom: 2px solid var(--primary-blue); padding-bottom: 10px; margin-bottom: 15px;">
-                    ⚖️ Dados da Medição
+                    ⚖️ Dados do Relatório
                 </h3>
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px;">
                     <div>
@@ -246,7 +246,7 @@
             
             <div style="display: flex; gap: 10px; margin-top: 30px;">
                 <button type="submit" style="flex: 1; padding: 12px; background-color: var(--primary-blue); color: white; border: none; border-radius: 4px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: background-color 0.2s;">
-                    💾 {% if object %}Atualizar Medição{% else %}Criar Medição{% endif %}
+                    💾 {% if object %}Atualizar Relatório{% else %}Criar Relatório{% endif %}
                 </button>
                 <a href="{% url 'medicoes:medicao_lista' %}" style="flex: 1; padding: 12px; background-color: #666; color: white; text-decoration: none; border-radius: 4px; font-size: 1rem; font-weight: 700; text-align: center; transition: background-color 0.2s;">
                     ✕ Cancelar

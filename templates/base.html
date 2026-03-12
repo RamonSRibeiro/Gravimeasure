@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Gravimanager - Estações Gravimétricas{% endblock %}</title>
+    <title>{% block title %}Gravimeasure - Estações Gravimétricas{% endblock %}</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'styles.css' %}">
     {% block extra_css %}{% endblock %}
@@ -33,9 +33,9 @@
     {% if user.is_authenticated %}
     <nav style="margin-top: 15px;">
         <a href="{% url 'medicoes:home' %}" style="margin-right: 15px; color: var(--primary-blue); text-decoration: none;">Home</a>
-        <a href="{% url 'medicoes:medicao_lista' %}" style="margin-right: 15px; color: var(--primary-blue); text-decoration: none;">Medições</a>
+        <a href="{% url 'medicoes:medicao_lista' %}" style="margin-right: 15px; color: var(--primary-blue); text-decoration: none;">Todos os Relatórios</a>
         {% if user.is_operator or user.is_admin %}
-            <a href="{% url 'medicoes:medicao_adicionar' %}" style="margin-right: 15px; color: var(--primary-blue); text-decoration: none;">Adicionar Medição</a>
+            <a href="{% url 'medicoes:medicao_adicionar' %}" style="margin-right: 15px; color: var(--primary-blue); text-decoration: none;">Adicionar Relatório</a>
         {% endif %}
         <a href="{% url 'medicoes:medicao_pdf_consolidado' %}" style="color: var(--primary-blue); text-decoration: none;">PDF Consolidado</a>
     </nav>

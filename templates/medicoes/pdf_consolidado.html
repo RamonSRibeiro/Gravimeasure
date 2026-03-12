@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Relatório Gravimétrico - Gravimanager</title>
+    <title>Relatório Gravimétrico - Gravimeasure</title>
     <style>
         /* Definições de Paged Media */
         @page {
@@ -102,7 +102,7 @@
 </head>
 <body class="pdf-consolidado">
     <div class="header">
-        <h1>GRAVIMANAGER</h1>
+        <h1>Gravimeasure</h1>
         <div class="subtitle">REDE GRAVIMÉTRICA FUNDAMENTAL</div>
         <div class="subtitle">Relatório Consolidado de Medições Gravimétricas</div>
     </div>
@@ -142,14 +142,14 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="10">Nenhuma medição encontrada no banco de dados.</td>
+                <td colspan="10">Nenhum relatório encontrada no banco de dados.</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 
     <div class="footer">
-        Gravimanager - Sistema de Gestão de Dados Gravimétricos - Página <span class="page"></span>
+        Gravimeasure - Sistema de Gestão de Dados Gravimétricos - Página <span class="page"></span>
     </div>
 </body>
 </html>

@@ -13,8 +13,8 @@
             <img src="{% static 'medicoes/logo.svg' %}" alt="logo" style="height:48px;" />
         {% endif %}
         <div class="document-title">
-            <h1>GRAVIMANAGER</h1>
-            <div class="company-small">REDE GRAVIMÉTRICA FUNDAMENTAL</div>
+            <h1>Gravimeasure</h1>
+            <div class="company-small">Rede Gravimétrica Fundamental</div>
         </div>
     </div>
 
@@ -53,7 +53,7 @@
     </div>
 
     <div class="section">
-        <div class="section-title">Dados da Medição</div>
+        <div class="section-title">Dados do Relatório</div>
         <table>
             <tr>
                 <th>Parâmetro</th>
@@ -100,7 +100,7 @@
             {% endif %}
             {% endif %}
             <tr>
-                <td>Data da Medição</td>
+                <td>Data do Relatório</td>
                 <td>{{ medicao.data_medicao|date:"d/m/Y" }}</td>
             </tr>
         </table>
@@ -178,7 +178,7 @@
          <div style="text-align: center; margin-top: 10px;">
              <img src="{{ mapa_contorno }}" style="width: 100%; max-width: 16cm; border: 1px solid #ddd;">
             <p style="font-size: 9px; color: #555; font-style: italic;">
-                * A estrela amarela identifica a posição exata desta medição no mapa de anomalias.
+                * A estrela amarela identifica a posição exata deste relatório no mapa de anomalias.
             </p>
          </div>
     </div>
@@ -186,7 +186,7 @@
 
     <div class="footer">
         <p>Documento gerado automaticamente em {{ medicao.data_atualizacao|date:"d/m/Y H:i" }}</p>
-        <p>Gravimanager - Rede Gravimétrica Fundamental</p>
+        <p>Gravimeasure - Rede Gravimétrica Fundamental</p>
     </div>
 </body>
 </html>

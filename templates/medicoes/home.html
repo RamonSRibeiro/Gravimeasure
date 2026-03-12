@@ -2,6 +2,8 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
 {% endblock %}
 
 {% block content %}
@@ -22,8 +24,8 @@
     
     <!-- Sidebar de Downloads -->
     <aside class="sidebar-downloads">
-        <h3>📋 Relatórios Disponíveis</h3>
-        <p>Selecione uma medição para visualizar detalhes ou fazer download do PDF:</p>
+        <h3>📋 Ultimos Relatorios Registrados</h3>
+        <p>Selecione um relatório para visualizar detalhes ou fazer download do PDF:</p>
         
         {% if medicoes %}
         <ul class="download-list">
@@ -54,7 +56,7 @@
         {% if user.is_operator or user.is_admin %}
         <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid var(--primary-blue);">
             <a href="{% url 'medicoes:medicao_adicionar' %}" style="display: block; text-align: center; padding: 10px; background-color: var(--primary-blue); color: white; text-decoration: none; border-radius: 4px; font-weight: 700;">
-                ➕ Adicionar Medição
+                ➕ Adicionar Relatório
             </a>
         </div>
         {% endif %}
@@ -75,10 +77,10 @@
         
         {% else %}
         <div style="padding: 20px; text-align: center; color: #666;">
-            <p>Nenhuma medição cadastrada ainda.</p>
+            <p>Nenhum relatório cadastrado ainda.</p>
             {% if user.is_operator or user.is_admin %}
             <a href="{% url 'medicoes:medicao_adicionar' %}" style="display: inline-block; padding: 10px 20px; background-color: var(--primary-blue); color: white; text-decoration: none; border-radius: 4px; font-weight: 700; margin-top: 10px;">
-                ➕ Adicionar Primeira Medição
+                ➕ Adicionar Primeiro Relatório
             </a>
             {% endif %}
         </div>
@@ -96,13 +98,14 @@
 
 {% block extra_js %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+
 <script>
 console.log('🗺️ Script iniciado - aguardando DOM...');
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ DOM carregado');
     
-    // Verificar se Leaflet está disponível
     if (typeof L === 'undefined') {
         console.error('❌ Leaflet não foi carregado!');
         alert('Erro: Biblioteca Leaflet não foi carregada. Recarregue a página.');
@@ -110,16 +113,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     console.log('✅ Leaflet disponível');
     
-    // Verificar se o div existe
     const mapDiv = document.getElementById('mapa-estacoes');
     if (!mapDiv) {
         console.error('❌ Div #mapa-estacoes não encontrado!');
         alert('Erro: Container do mapa não encontrado no HTML.');
         return;
     }
-    console.log('✅ Div #mapa-estacoes encontrado');
     
-    // Inicializar o mapa
     let mapa;
     try {
         mapa = L.map('mapa-estacoes').setView([-15.7975, -47.8919], 4);
@@ -130,7 +130,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
-    // Adicionar camada do OpenStreetMap
     try {
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors',
@@ -141,48 +140,38 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('❌ Erro ao adicionar tile layer:', e);
     }
     
+    // 🌟 INICIALIZAR O GRUPO DE CLUSTER AQUI
+    const marcadoresCluster = L.markerClusterGroup({
+        chunkedLoading: true // Ajuda na performance se houver muitos dados
+    });
+    
     let markers = {};
     let currentMarker = null;
     
-    // Carregar dados de medições via API
     const spinnerEl = document.getElementById('spinner');
     const spinnerOverlayEl = document.getElementById('spinnerOverlay');
     
     if (spinnerEl) spinnerEl.classList.add('show');
     if (spinnerOverlayEl) spinnerOverlayEl.classList.add('show');
     
-    console.log('🔄 Iniciando fetch para /api/dados-mapa/');
-    
     fetch('{% url "medicoes:medicoes_api" %}', {
         credentials: 'same-origin'
     })
         .then(response => {
-            console.log('📡 Resposta recebida - status:', response.status);
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
+            if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             return response.json();
         })
         .then(data => {
-            console.log('✅ JSON parseado - dados:', data);
-            
-            if (!data.success) {
-                console.warn('⚠️ API retornou success=false:', data);
-                throw new Error('API returned success=false');
-            }
+            if (!data.success) throw new Error('API returned success=false');
             
             if (!data.medicoes || data.medicoes.length === 0) {
-                console.warn('⚠️ Nenhuma medição disponível');
                 ocultarSpinner();
                 return;
             }
             
-            console.log(`📍 Criando ${data.medicoes.length} marcadores...`);
-            
             let markerCount = 0;
             data.medicoes.forEach(medicao => {
                 try {
-                    // Mapeamento de ícones por opção
                     const iconMap = {
                         'default': 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-blue.png',
                         'red': 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-red.png',
@@ -192,7 +181,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         'dark': 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-black.png'
                     };
 
-                    // Selecionar URL do ícone: personalizado quando aplicável, caso contrário mapa de cores
                     let iconUrl = iconMap['default'];
                     if (medicao.marker_icon === 'custom' && medicao.marker_custom_url) {
                         iconUrl = medicao.marker_custom_url;
@@ -211,7 +199,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         })
                     });
                     
-                    // Popup com informações
                     const popupContent = `
                         <div style="font-weight: bold; color: var(--primary-blue); margin-bottom: 8px;">
                             ${medicao.nome_estacao}
@@ -230,9 +217,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     `;
                     
                     marker.bindPopup(popupContent);
-                    marker.addTo(mapa);
                     
-                    // Interatividade com sidebar
+                    // 🌟 EM VEZ DE marker.addTo(mapa), ADICIONAMOS AO CLUSTER:
+                    marcadoresCluster.addLayer(marker);
+                    
                     marker.on('click', function() {
                         highlightRow(medicao.id);
                         currentMarker = marker;
@@ -245,31 +233,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            console.log(`✅ ${markerCount} marcadores criados com sucesso`);
+            // 🌟 ADICIONA O GRUPO INTEIRO AO MAPA DE UMA SÓ VEZ
+            mapa.addLayer(marcadoresCluster);
+            console.log(`✅ ${markerCount} marcadores agrupados com sucesso`);
             
-            // Interatividade da sidebar com o mapa
             try {
                 document.querySelectorAll('.download-item').forEach(item => {
                     item.addEventListener('click', function(e) {
-                        if (e.target.closest('a')) return; // Se clicou num link, não fazer zoom
+                        if (e.target.closest('a')) return; 
                         
                         const medicaoId = this.dataset.medicaoId;
-                        const lat = parseFloat(this.dataset.latitude);
-                        const lon = parseFloat(this.dataset.longitude);
                         
-                        // Zoom e center no marcador
-                        mapa.setView([lat, lon], 14);
-                        
-                        // Abrir popup
                         if (markers[medicaoId]) {
-                            markers[medicaoId].openPopup();
-                            currentMarker = markers[medicaoId];
+                            // 🌟 zoomToShowLayer FAZ O CLUSTER SE ABRIR AUTOMATICAMENTE PARA MOSTRAR O POPUP
+                            marcadoresCluster.zoomToShowLayer(markers[medicaoId], function() {
+                                markers[medicaoId].openPopup();
+                                currentMarker = markers[medicaoId];
+                            });
                         }
                         
                         highlightRow(medicaoId);
                     });
                     
-                    // Highlight row
                     item.addEventListener('mouseenter', function() {
                         this.style.backgroundColor = '#e3f2fd';
                     });
@@ -285,21 +270,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('❌ Erro ao carregar mapa:', error);
-            console.error('Stack:', error.stack);
             ocultarSpinner();
-            
-            // Mostrar mensagem de erro amigável
-            const errorMsg = `
-Erro ao carregar as medições:
-${error.message}
-
-Por favor:
-1. Recarregue a página (Ctrl+F5)
-2. Verifique se está logado
-3. Verifique console (F12) para mais detalhes
-            `;
-            
-            console.error(errorMsg);
         });
     
     function highlightRow(medicaoId) {
@@ -317,15 +288,11 @@ Por favor:
     }
     
     function ocultarSpinner() {
-        console.log('🛑 Ocultando spinner');
         const spinnerEl = document.getElementById('spinner');
         const spinnerOverlayEl = document.getElementById('spinnerOverlay');
         if (spinnerEl) spinnerEl.classList.remove('show');
         if (spinnerOverlayEl) spinnerOverlayEl.classList.remove('show');
-        console.log('✅ Spinner oculto');
     }
 });
-
-console.log('✅ Script carregado e aguardando DOMContentLoaded...');
 </script>
 {% endblock %}

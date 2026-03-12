@@ -513,7 +513,7 @@ class MedicaoCreateView(CreateView):
     
     def dispatch(self, request, *args, **kwargs):
         if not is_operator_or_admin(request.user):
-            messages.error(request, 'Você não tem permissão para adicionar medições.')
+            messages.error(request, 'Você não tem permissão para adicionar relatórios.')
             return redirect('medicoes:medicao_lista')
         return super().dispatch(request, *args, **kwargs)
     
